@@ -26,7 +26,7 @@ function validateQuery(body: unknown): IntelQuery | null {
     if (typeof (pkg as any).name !== 'string') return null
     if (typeof (pkg as any).version !== 'string') return null
   }
-  return q as IntelQuery
+  return q as unknown as IntelQuery
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
