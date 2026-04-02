@@ -10,6 +10,15 @@
     "postinstall"
   ],
   "license": "MIT",
+  "author": "Ahmet Baris Gunaydin",
+  "homepage": "https://safenpm.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abgnydn/safenpm"
+  },
+  "bugs": {
+    "url": "https://github.com/abgnydn/safenpm/issues"
+  },
   "bin": {
     "safenpm": "./dist/cli.js"
   },
