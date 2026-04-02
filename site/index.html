@@ -217,6 +217,49 @@
       font-size: 14px; color: var(--text-dim); line-height: 1.6;
     }
 
+    /* ── Threat Network ── */
+    .threat-network {
+      padding: 100px 0;
+      background: linear-gradient(180deg, var(--bg) 0%, rgba(168, 85, 247, 0.03) 50%, var(--bg) 100%);
+    }
+    .threat-flow {
+      display: flex; align-items: center; justify-content: center;
+      gap: 24px; margin: 56px 0 56px;
+      flex-wrap: wrap;
+    }
+    .threat-step {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 16px; text-align: center;
+    }
+    .threat-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .threat-label {
+      font-size: 14px; font-weight: 600; line-height: 1.5;
+      color: var(--text-dim);
+    }
+    .threat-arrow { color: var(--text-dim); flex-shrink: 0; }
+    .threat-details {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; margin-top: 16px;
+    }
+    .threat-detail-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px;
+    }
+    .threat-detail-card h4 {
+      font-size: 15px; font-weight: 700; margin-bottom: 10px;
+    }
+    .threat-detail-card p {
+      font-size: 13px; color: var(--text-dim); line-height: 1.6;
+    }
+    @media (max-width: 640px) {
+      .threat-details { grid-template-columns: 1fr; }
+      .threat-flow { gap: 16px; }
+      .threat-arrow { transform: rotate(90deg); }
+    }
+
     /* ── Platform table ── */
     .platforms { padding: 80px 0; }
     .platform-table {
@@ -467,7 +510,7 @@
     </h1>
     <p>
       Drop-in <code class="mono">npm install</code> replacement that sandboxes every postinstall script,
-      statically analyzes for threats, and scans your entire dependency tree.
+      statically analyzes for threats, and shares alerts across a decentralized threat intelligence network.
     </p>
 
     <div class="hero-install mono" onclick="copyInstall()">
@@ -516,6 +559,13 @@
         <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">expresss</span> &#x2192; looks like <span class="t-cyan">express</span></div>
         <div class="line">    <span class="t-dim">technique: edit-distance-1  confidence: high</span></div>
         <div class="line"></div>
+        <div class="line"><span class="t-cyan">  &#x2192;</span> querying threat intelligence network...</div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">evil-pkg@0.0.1</span> <span class="t-dim">flagged by community</span></div>
+        <div class="line">    <span class="t-magenta">INTEL </span> 47 reports from other developers</div>
+        <div class="line">    <span class="t-magenta">INTEL </span> top reason: credential exfiltration</div>
+        <div class="line">    <span class="t-dim">    first seen: 2 hours ago  last seen: 4 min ago</span></div>
+        <div class="line"></div>
         <div class="line"><span class="t-cyan">  &#x2192;</span> found 3 install scripts — running in sandbox...</div>
         <div class="line"></div>
         <div class="line"><span class="t-red">  &#x2717; blocked</span>  <span class="t-bold">evil-pkg@0.0.1</span></div>
@@ -524,6 +574,8 @@
         <div class="line"></div>
         <div class="line"><span class="t-green">  &#x2713; clean</span>   bcrypt@5.1.0</div>
         <div class="line"><span class="t-blue">  &#x21b3; allow</span>   sharp@0.33.0 <span class="t-dim">(allowlisted)</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-magenta">  &#x2192;</span> signal reported to threat network <span class="t-dim">(anonymous)</span></div>
         <div class="line"></div>
         <div class="line"><span class="t-red">  <span class="t-bold">1 blocked</span></span><span class="t-red"> out of 3 install scripts</span></div>
       </div>
@@ -655,8 +707,8 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--magenta);"><i data-lucide="globe"></i></div>
-        <h3>Community Threat Intel</h3>
-        <p>Checks packages against the safenpm threat intelligence network. Flagged packages are surfaced with report counts and top reasons.</p>
+        <h3>Decentralized Threat Network</h3>
+        <p>When a package is blocked, the signal is anonymously reported to the safenpm network. Every install queries it back — if one developer gets hit, everyone is warned. No identifying data ever leaves your machine.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--blue);"><i data-lucide="terminal"></i></div>
@@ -677,6 +729,57 @@
         <div class="feature-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--magenta);"><i data-lucide="file-text"></i></div>
         <h3>Package Diff Viewer</h3>
         <p>Git-diff-style output showing exactly what changed in each dependency update — script modifications, added/removed deps, and new files. Snapshot and compare.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Threat Network -->
+<section class="threat-network" id="threat-network">
+  <div class="container">
+    <div class="section-label" style="color: var(--magenta);">Decentralized Intelligence</div>
+    <div class="section-title">One developer blocks it.<br>Every developer knows.</div>
+    <div class="section-desc" style="max-width: 680px;">
+      safenpm runs a decentralized threat intelligence network. When a malicious package is blocked on any machine,
+      an anonymous signal — package name, script hash, block reason — is shared with the community.
+      On every install, safenpm queries this network so threats are flagged before they can execute.
+    </div>
+
+    <div class="threat-flow">
+      <div class="threat-step">
+        <div class="threat-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--red);">
+          <i data-lucide="shield-off" style="width:28px;height:28px;"></i>
+        </div>
+        <div class="threat-label">Malicious package<br>blocked by sandbox</div>
+      </div>
+      <div class="threat-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;color:var(--text-dim);"></i></div>
+      <div class="threat-step">
+        <div class="threat-icon" style="background: rgba(168, 85, 247, 0.12); color: var(--magenta);">
+          <i data-lucide="radio" style="width:28px;height:28px;"></i>
+        </div>
+        <div class="threat-label">Anonymous signal<br>sent to network</div>
+      </div>
+      <div class="threat-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;color:var(--text-dim);"></i></div>
+      <div class="threat-step">
+        <div class="threat-icon" style="background: rgba(34, 197, 94, 0.12); color: var(--accent);">
+          <i data-lucide="users" style="width:28px;height:28px;"></i>
+        </div>
+        <div class="threat-label">Every safenpm user<br>warned automatically</div>
+      </div>
+    </div>
+
+    <div class="threat-details">
+      <div class="threat-detail-card">
+        <h4><i data-lucide="eye-off" style="width:16px;height:16px;vertical-align:-2px;color:var(--magenta);"></i> Fully Anonymous</h4>
+        <p>Signals contain only the package name, script content hash, and block reason. No IP addresses, usernames, project names, or file paths are transmitted.</p>
+      </div>
+      <div class="threat-detail-card">
+        <h4><i data-lucide="zap" style="width:16px;height:16px;vertical-align:-2px;color:var(--yellow);"></i> Real-Time Protection</h4>
+        <p>Threat queries happen on every install with a local cache layer. New threats propagate across the network within minutes of the first detection.</p>
+      </div>
+      <div class="threat-detail-card">
+        <h4><i data-lucide="toggle-right" style="width:16px;height:16px;vertical-align:-2px;color:var(--cyan);"></i> Opt-Out Friendly</h4>
+        <p>Run with <code class="mono">--no-report</code> to disable outbound signal reporting. Threat intel queries still work — you benefit from the network without contributing.</p>
       </div>
     </div>
   </div>
