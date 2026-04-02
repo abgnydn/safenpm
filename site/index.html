@@ -260,6 +260,106 @@
       .threat-arrow { transform: rotate(90deg); }
     }
 
+    /* ── Stats Dashboard ── */
+    .stats-dashboard {
+      padding: 80px 0;
+      background: linear-gradient(180deg, var(--bg) 0%, rgba(6, 182, 212, 0.03) 50%, var(--bg) 100%);
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 20px; margin: 48px 0 40px;
+    }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px 24px; text-align: center;
+      transition: border-color 0.3s;
+    }
+    .stat-card:hover { border-color: rgba(6, 182, 212, 0.3); }
+    .stat-number {
+      font-size: 36px; font-weight: 800; line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+    }
+    .stat-number.green { color: var(--accent); }
+    .stat-number.cyan { color: var(--cyan); }
+    .stat-number.magenta { color: var(--magenta); }
+    .stat-number.yellow { color: var(--yellow); }
+    .stat-label {
+      font-size: 13px; color: var(--text-dim); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .stats-panels {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    .stats-panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; min-height: 240px;
+    }
+    .stats-panel h4 {
+      font-size: 14px; font-weight: 700; margin-bottom: 16px;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim);
+    }
+    .feed-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 13px;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .feed-dot.red { background: var(--red); }
+    .feed-dot.yellow { background: var(--yellow); }
+    .feed-dot.magenta { background: var(--magenta); }
+    .feed-pkg {
+      font-family: 'JetBrains Mono', monospace; font-weight: 600;
+      color: var(--text); flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .feed-reason { color: var(--text-dim); font-size: 12px; flex-shrink: 0; }
+    .feed-time { color: var(--text-dim); font-size: 11px; flex-shrink: 0; }
+    .category-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0;
+    }
+    .category-name {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      color: var(--text); width: 180px; flex-shrink: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .category-track {
+      flex: 1; height: 6px; background: rgba(255,255,255,0.04);
+      border-radius: 3px; overflow: hidden;
+    }
+    .category-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta));
+      transition: width 1s ease;
+    }
+    .category-count {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      color: var(--text-dim); width: 40px; text-align: right; flex-shrink: 0;
+    }
+    .stats-status {
+      text-align: center; margin-top: 24px;
+      font-size: 12px; color: var(--text-dim);
+    }
+    .stats-status .dot {
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    }
+    .stats-status .dot.live { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .stats-status .dot.demo { background: var(--yellow); }
+    .stats-empty {
+      text-align: center; padding: 40px 20px; color: var(--text-dim);
+      font-size: 13px;
+    }
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-panels { grid-template-columns: 1fr; }
+      .category-name { width: 120px; }
+    }
+
     /* ── Platform table ── */
     .platforms { padding: 80px 0; }
     .platform-table {
@@ -495,6 +595,7 @@
       <a href="#features">Features</a>
       <a href="#docs">Docs</a>
       <a href="showcase.html">Showcase</a>
+      <a href="#dashboard">Dashboard</a>
       <a href="https://github.com/abgnydn/safenpm">GitHub</a>
       <span class="nav-badge">v0.5.0</span>
     </div>
@@ -781,6 +882,56 @@
         <h4><i data-lucide="toggle-right" style="width:16px;height:16px;vertical-align:-2px;color:var(--cyan);"></i> Opt-Out Friendly</h4>
         <p>Run with <code class="mono">--no-report</code> to disable outbound signal reporting. Threat intel queries still work — you benefit from the network without contributing.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Dashboard -->
+<section class="stats-dashboard" id="dashboard">
+  <div class="container">
+    <div class="section-label" style="color: var(--cyan);">Transparent Network</div>
+    <div class="section-title">Live Threat Intelligence</div>
+    <div class="section-desc">
+      Every signal flowing through the safenpm network — fully transparent, fully anonymous.
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number cyan" id="stat-signals">--</div>
+        <div class="stat-label">Signals Reported</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number magenta" id="stat-packages">--</div>
+        <div class="stat-label">Packages Flagged</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number yellow" id="stat-top-category">--</div>
+        <div class="stat-label">Top Attack Type</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number green" id="stat-status">--</div>
+        <div class="stat-label">Network Status</div>
+      </div>
+    </div>
+
+    <div class="stats-panels">
+      <div class="stats-panel">
+        <h4><i data-lucide="activity" style="width:14px;height:14px;vertical-align:-2px;color:var(--cyan);"></i> Recent Signals</h4>
+        <div id="feed-recent">
+          <div class="stats-empty">Waiting for signals...</div>
+        </div>
+      </div>
+      <div class="stats-panel">
+        <h4><i data-lucide="bar-chart-3" style="width:14px;height:14px;vertical-align:-2px;color:var(--magenta);"></i> Attack Categories</h4>
+        <div id="feed-categories">
+          <div class="stats-empty">No data yet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-status">
+      <span class="dot demo" id="status-dot"></span>
+      <span id="status-text">Connecting to network...</span>
     </div>
   </div>
 </section>
@@ -1584,6 +1735,155 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
       if (inp) inp.focus();
     }
   });
+})();
+</script>
+
+<script>
+// ── Stats Dashboard ──
+(function() {
+  const API_BASE = '/api/v1';
+  const POLL_INTERVAL = 30000;
+
+  function animateNumber(el, target, duration) {
+    const start = parseInt(el.textContent) || 0;
+    if (start === target) return;
+    const startTime = performance.now();
+    function tick(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(start + (target - start) * eased).toLocaleString();
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function timeAgo(ts) {
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+  }
+
+  function reasonColor(reason) {
+    if (reason.includes('network') || reason.includes('exfil')) return 'red';
+    if (reason.includes('credential') || reason.includes('ssh')) return 'red';
+    if (reason.includes('eval') || reason.includes('obfusc')) return 'yellow';
+    return 'magenta';
+  }
+
+  function renderRecent(items) {
+    const el = document.getElementById('feed-recent');
+    if (!items || items.length === 0) {
+      el.innerHTML = '<div class="stats-empty">No signals yet. Be the first to run <code class="mono">safenpm install</code>.</div>';
+      return;
+    }
+    el.innerHTML = items.slice(0, 8).map(function(s) {
+      return '<div class="feed-item">' +
+        '<span class="feed-dot ' + reasonColor(s.reason) + '"></span>' +
+        '<span class="feed-pkg">' + escapeHtml(s.package + '@' + s.version) + '</span>' +
+        '<span class="feed-reason">' + escapeHtml(s.reason) + '</span>' +
+        '<span class="feed-time">' + timeAgo(s.timestamp) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderCategories(items) {
+    const el = document.getElementById('feed-categories');
+    if (!items || items.length === 0) {
+      el.innerHTML = '<div class="stats-empty">No attack data yet.</div>';
+      return;
+    }
+    var maxCount = Math.max.apply(null, items.map(function(c) { return c.count; }));
+    el.innerHTML = items.slice(0, 6).map(function(c) {
+      var pct = Math.round((c.count / maxCount) * 100);
+      return '<div class="category-bar">' +
+        '<span class="category-name">' + escapeHtml(c.reason) + '</span>' +
+        '<div class="category-track"><div class="category-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="category-count">' + c.count + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function updateDashboard(data) {
+    animateNumber(document.getElementById('stat-signals'), data.totalSignals, 800);
+    animateNumber(document.getElementById('stat-packages'), data.totalPackages, 800);
+
+    var topCat = data.categories && data.categories.length > 0 ? data.categories[0].reason : '--';
+    var topCatEl = document.getElementById('stat-top-category');
+    topCatEl.textContent = topCat;
+    topCatEl.style.fontSize = topCat.length > 12 ? '20px' : '28px';
+
+    var statusEl = document.getElementById('stat-status');
+    var dotEl = document.getElementById('status-dot');
+    var textEl = document.getElementById('status-text');
+
+    if (data.live) {
+      statusEl.textContent = 'LIVE';
+      dotEl.className = 'dot live';
+      textEl.textContent = 'Connected to safenpm threat network. Updated every 30s.';
+    } else {
+      statusEl.textContent = 'DEMO';
+      dotEl.className = 'dot demo';
+      textEl.textContent = 'Network offline. Showing placeholder data. Connect Upstash Redis to go live.';
+    }
+
+    renderRecent(data.recent);
+    renderCategories(data.categories);
+  }
+
+  // Demo data when API has no data yet
+  var demoData = {
+    totalSignals: 1247,
+    totalPackages: 83,
+    categories: [
+      { reason: 'network access', count: 412 },
+      { reason: 'credential exfiltration', count: 287 },
+      { reason: 'eval/obfuscation', count: 194 },
+      { reason: 'reverse shell', count: 156 },
+      { reason: 'ssh key theft', count: 112 },
+      { reason: 'env var harvesting', count: 86 }
+    ],
+    recent: [
+      { package: 'ev1l-pkg', version: '0.0.3', reason: 'network access', timestamp: new Date(Date.now() - 120000).toISOString() },
+      { package: 'colrs', version: '1.0.0', reason: 'credential exfiltration', timestamp: new Date(Date.now() - 300000).toISOString() },
+      { package: '@evil/express', version: '4.18.0', reason: 'reverse shell', timestamp: new Date(Date.now() - 900000).toISOString() },
+      { package: 'lod4sh', version: '0.1.0', reason: 'ssh key theft', timestamp: new Date(Date.now() - 1800000).toISOString() },
+      { package: 'requst', version: '2.0.0', reason: 'eval/obfuscation', timestamp: new Date(Date.now() - 3600000).toISOString() },
+      { package: 'axois', version: '1.0.1', reason: 'network access', timestamp: new Date(Date.now() - 7200000).toISOString() }
+    ],
+    topFlagged: [],
+    live: false
+  };
+
+  function fetchStats() {
+    fetch(API_BASE + '/stats')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.totalSignals > 0 && data.live) {
+          updateDashboard(data);
+        } else {
+          updateDashboard(demoData);
+        }
+      })
+      .catch(function() {
+        updateDashboard(demoData);
+      });
+  }
+
+  // Initial load
+  fetchStats();
+  // Poll
+  setInterval(fetchStats, POLL_INTERVAL);
 })();
 </script>
 
