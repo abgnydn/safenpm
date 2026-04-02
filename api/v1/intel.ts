@@ -1,6 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getRedis, FLAGGED_KEY } from '../_lib/redis'
 
+// Must match signal.ts thresholds
+const PROTECTED_PACKAGES = new Set([
+  'express', 'react', 'lodash', 'axios', 'typescript', 'webpack',
+  'next', 'vue', 'angular', 'jquery', 'moment', 'chalk', 'commander',
+  'debug', 'uuid', 'dotenv', 'cors', 'body-parser', 'mongoose',
+  'pg', 'redis', 'socket.io', 'passport', 'jsonwebtoken', 'bcrypt',
+  'nodemon', 'eslint', 'prettier', 'jest', 'mocha', 'chai',
+  'rxjs', 'ramda', 'underscore', 'bluebird', 'async', 'glob',
+  'minimist', 'yargs', 'inquirer', 'ora', 'fs-extra', 'rimraf',
+  'mkdirp', 'semver', 'dayjs', 'date-fns', 'luxon',
+])
+const FLAG_THRESHOLD_DEFAULT = 3
+const FLAG_THRESHOLD_PROTECTED = 15
+
 interface IntelQuery {
   packages: { name: string; version: string }[]
 }
@@ -71,10 +85,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .slice(0, 5)
           .map(([reason]) => reason)
 
+        // Determine if this package meets the flagging threshold
+        const distinctReporters = entry.distinctReporters || entry.reportCount
+        const threshold = PROTECTED_PACKAGES.has(pkg.name) ? FLAG_THRESHOLD_PROTECTED : FLAG_THRESHOLD_DEFAULT
+        const isFlagged = distinctReporters >= threshold
+
+        // Check for inconsistent reports (many different script hashes = likely spam)
+        const hashCount = entry.scriptHashes ? entry.scriptHashes.length : 1
+        const hashesConsistent = hashCount <= 3 // legitimate updates might change the hash a few times
+        const flagged = isFlagged && hashesConsistent
+
         results.push({
           name: pkg.name,
           version: pkg.version,
-          flagged: true,
+          flagged,
           reportCount: entry.reportCount,
           firstSeen: entry.firstSeen,
           lastSeen: entry.lastSeen,
