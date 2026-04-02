@@ -2,6 +2,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logger = void 0;
 const analyzer_1 = require("./analyzer");
+function timeSince(iso) {
+    const ms = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1)
+        return 'just now';
+    if (mins < 60)
+        return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)
+        return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+}
 const RESET = '\x1b[0m';
 const DIM = '\x1b[2m';
 const BOLD = '\x1b[1m';
@@ -103,15 +116,26 @@ exports.logger = {
     // ── Threat intel output ──
     threatIntelHeader() {
         console.log();
-        console.log(`${CYAN}  →${RESET} community threat intelligence...`);
+        console.log(`${CYAN}  →${RESET} querying threat intelligence network...`);
         console.log();
     },
     threatIntelResult(r) {
         if (r.flagged) {
-            console.log(`  ${RED}⚠${RESET} ${BOLD}${r.name}@${r.version}${RESET} ${RED}FLAGGED${RESET} (${r.reportCount} reports)`);
+            console.log(`  ${RED}⚠ COMMUNITY ALERT${RESET}  ${BOLD}${r.name}@${r.version}${RESET}`);
+            console.log(`    ${MAGENTA}INTEL ${RESET} ${r.reportCount} report${r.reportCount !== 1 ? 's' : ''} from other developers`);
             if (r.topReasons.length > 0) {
-                console.log(`    ${DIM}reasons: ${r.topReasons.join(', ')}${RESET}`);
+                console.log(`    ${MAGENTA}INTEL ${RESET} top reason: ${r.topReasons[0]}`);
+                if (r.topReasons.length > 1) {
+                    console.log(`    ${DIM}       also: ${r.topReasons.slice(1).join(', ')}${RESET}`);
+                }
             }
+            if (r.firstSeen && r.lastSeen) {
+                const ago = timeSince(r.lastSeen);
+                console.log(`    ${DIM}       first seen: ${r.firstSeen.split('T')[0]}  last report: ${ago}${RESET}`);
+            }
+            console.log(`    ${YELLOW}→${RESET} This package was flagged by the safenpm community network.`);
+            console.log(`    ${YELLOW}→${RESET} Consider removing it or verifying it is legitimate.`);
+            console.log();
         }
     },
     // ── Maintainer change output ──

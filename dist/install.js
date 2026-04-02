@@ -121,9 +121,9 @@ async function install(opts) {
             }
         }
     }
-    // ── v0.4.0: threat intel ──
+    // ── Threat intel: always runs (core security feature) ──
     let threatResults = [];
-    if (scan) {
+    {
         threatResults = await (0, threatintel_1.checkThreatIntel)(scripts.map(s => ({ name: s.name, version: s.version })));
         const flagged = threatResults.filter(r => r.flagged);
         if (!json && flagged.length > 0) {

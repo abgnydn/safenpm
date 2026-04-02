@@ -9,7 +9,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 
-const INTEL_HOST = 'safenpm.vercel.app'
+const INTEL_HOST = 'safenpm.dev'
 const INTEL_PATH = '/api/v1/intel'
 const CACHE_DIR = path.join(os.homedir(), '.safenpm', 'intel-cache')
 const CACHE_TTL = 3600_000 // 1 hour

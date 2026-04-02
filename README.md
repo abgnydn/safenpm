@@ -12,7 +12,7 @@
 Every year, thousands of malicious packages slip into npm — exfiltrating credentials via postinstall scripts, opening reverse shells, or stealing SSH keys. `safenpm` wraps `npm install` with a security-first pipeline: static analysis, sandboxed execution, typosquat detection, maintainer change alerts, lockfile integrity checks, and real-time threat intelligence — all in one command.
 
 <p align="center">
-  <a href="https://safenpm.vercel.app"><strong>Website</strong></a> · <a href="https://safenpm.vercel.app/showcase.html"><strong>Showcase</strong></a> · <a href="#quick-start"><strong>Quick Start</strong></a> · <a href="#docs"><strong>Docs</strong></a>
+  <a href="https://safenpm.dev"><strong>Website</strong></a> · <a href="https://safenpm.dev/showcase.html"><strong>Showcase</strong></a> · <a href="#quick-start"><strong>Quick Start</strong></a> · <a href="#docs"><strong>Docs</strong></a>
 </p>
 
 ---
@@ -69,7 +69,7 @@ Scores every package 0-100 based on maintainer count, license, repository presen
 
 ### Decentralized Threat Intelligence Network
 
-**Live now at [safenpm.vercel.app](https://safenpm.vercel.app).**
+**Live now at [safenpm.dev](https://safenpm.dev).**
 
 When safenpm blocks a suspicious package, the signal flow is: **block -> anonymous report -> community warned**. The blocked package name, script hash, and block reason are reported to the safenpm community network — no identifying information leaves your machine. On **every install**, safenpm queries this network to check if any of your dependencies have been flagged by other developers. If one developer gets hit by a malicious package, every safenpm user is warned automatically.
 
@@ -93,7 +93,7 @@ When a flagged package is detected in your dependencies, you will see:
 - **Threshold-based flagging** — a package requires at least 3 independent reports before it triggers community alerts (15 reports for popular packages with >10k weekly downloads)
 - **Script hash consistency** — reports are validated against the actual script hash to prevent false flagging of legitimate packages
 
-The live transparent stats dashboard at [safenpm.vercel.app](https://safenpm.vercel.app) shows real-time network activity, total reports, unique packages flagged, and active contributors.
+The live transparent stats dashboard at [safenpm.dev](https://safenpm.dev) shows real-time network activity, total reports, unique packages flagged, and active contributors.
 
 ### Doctor Command
 Run `safenpm doctor` for a full project health report — letter grade, actionable fixes, and a breakdown of every risk signal across your dependency tree.

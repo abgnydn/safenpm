@@ -14,7 +14,7 @@ import { SandboxResult, Signal } from './types'
 
 const CONFIG_DIR = path.join(os.homedir(), '.safenpm')
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
-const REPORT_HOST = 'safenpm.vercel.app'
+const REPORT_HOST = 'safenpm.dev'
 const REPORT_PATH = '/api/v1/signal'
 
 // get or create a stable anonymous machine ID
