@@ -677,7 +677,8 @@
 
       /* Platforms */
       .platforms { padding: 60px 0; }
-      .platform-table { font-size: 12px; }
+      .platform-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
+      .platform-table { font-size: 12px; min-width: 420px; }
       .platform-table th { padding: 10px 12px; font-size: 11px; }
       .platform-table td { padding: 10px 12px; font-size: 12px; }
 
@@ -758,100 +759,6 @@
 </section>
 
 <!-- Terminal Demo -->
-<section class="terminal-section">
-  <div class="container">
-    <div class="terminal">
-      <div class="terminal-bar">
-        <div class="terminal-dot r"></div>
-        <div class="terminal-dot y"></div>
-        <div class="terminal-dot g"></div>
-        <span>~/my-project</span>
-      </div>
-      <div class="terminal-body mono">
-        <div class="line"><span class="t-prompt">$ </span><span class="t-cmd">safenpm install --scan</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-bold">  safenpm</span> <span class="t-dim">— sandboxed installs</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-dim">  sandbox: sandbox-exec (macOS)</span></div>
-        <div class="line"><span class="t-cyan">  &#x2192;</span> installing packages (scripts disabled)...</div>
-        <div class="line"></div>
-        <div class="line"><span class="t-cyan">  &#x2192;</span> static analysis of install scripts...</div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">evil-pkg@0.0.1</span> <span class="t-dim">risk: 90/100</span></div>
-        <div class="line">    <span class="t-red">HIGH  </span> downloads from external URL (curl/wget)</div>
-        <div class="line">    <span class="t-red">HIGH  </span> pipes output to shell execution</div>
-        <div class="line">    <span class="t-yellow">MEDIUM</span> reads sensitive home directory files</div>
-        <div class="line"></div>
-        <div class="line"><span class="t-cyan">  &#x2192;</span> typosquat detection...</div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">expresss</span> &#x2192; looks like <span class="t-cyan">express</span></div>
-        <div class="line">    <span class="t-dim">technique: edit-distance-1  confidence: high</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-cyan">  &#x2192;</span> querying threat intelligence network...</div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">evil-pkg@0.0.1</span> <span class="t-dim">flagged by community</span></div>
-        <div class="line">    <span class="t-magenta">INTEL </span> 47 reports from other developers</div>
-        <div class="line">    <span class="t-magenta">INTEL </span> top reason: credential exfiltration</div>
-        <div class="line">    <span class="t-dim">    first seen: 2 hours ago  last seen: 4 min ago</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-cyan">  &#x2192;</span> found 3 install scripts — running in sandbox...</div>
-        <div class="line"></div>
-        <div class="line"><span class="t-red">  &#x2717; blocked</span>  <span class="t-bold">evil-pkg@0.0.1</span></div>
-        <div class="line"><span class="t-dim">    hook:   postinstall</span></div>
-        <div class="line"><span class="t-dim">    reason: attempted network access during install</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-green">  &#x2713; clean</span>   bcrypt@5.1.0</div>
-        <div class="line"><span class="t-blue">  &#x21b3; allow</span>   sharp@0.33.0 <span class="t-dim">(allowlisted)</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-magenta">  &#x2192;</span> signal reported to threat network <span class="t-dim">(anonymous)</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-red">  <span class="t-bold">1 blocked</span></span><span class="t-red"> out of 3 install scripts</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Doctor Demo -->
-<section class="terminal-section" style="padding-top: 0;">
-  <div class="container">
-    <div class="terminal">
-      <div class="terminal-bar">
-        <div class="terminal-dot r"></div>
-        <div class="terminal-dot y"></div>
-        <div class="terminal-dot g"></div>
-        <span>~/my-project</span>
-      </div>
-      <div class="terminal-body mono">
-        <div class="line"><span class="t-prompt">$ </span><span class="t-cmd">safenpm doctor</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-bold">  safenpm</span> <span class="t-dim">— sandboxed installs</span></div>
-        <div class="line"></div>
-        <div class="line"><span class="t-cyan">  &#x2192;</span> running health check...</div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-green"><span class="t-bold">Grade: B+</span></span>  <span class="t-dim">(84/100)</span></div>
-        <div class="line">  <span class="t-dim">1 area could use attention, but no critical issues.</span></div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Lockfile</span> <span class="t-dim">92/100</span></div>
-        <div class="line">  <span class="t-green">  &#x2713;</span> Lockfile healthy (v3, 847 packages)</div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Install Scripts</span> <span class="t-dim">100/100</span></div>
-        <div class="line">  <span class="t-green">  &#x2713;</span> 2 install scripts, all low-risk</div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-yellow">!</span> <span class="t-bold">Typosquats</span> <span class="t-dim">60/100</span></div>
-        <div class="line">  <span class="t-yellow">  !</span> co1ors resembles colors (substitution)</div>
-        <div class="line">      <span class="t-cyan">fix:</span> <span class="t-dim">Run `safenpm fix` to replace with colors</span></div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Reputation</span> <span class="t-dim">78/100</span></div>
-        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Behavior</span> <span class="t-dim">100/100</span></div>
-        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Project Hygiene</span> <span class="t-dim">90/100</span></div>
-        <div class="line"></div>
-        <div class="line">  <span class="t-cyan">&#x2192;</span> 1 auto-fixable issue found</div>
-        <div class="line">  <span class="t-dim">run `safenpm fix` to apply, or `safenpm fix --dry-run` to preview</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- Interactive Playground -->
 <section class="playground-section" id="playground">
   <div class="container">
@@ -1077,6 +984,7 @@
       Native sandbox backends for every major OS. No Docker required.
     </div>
 
+    <div class="platform-table-wrap">
     <table class="platform-table">
       <thead>
         <tr>
@@ -1118,6 +1026,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 </section>
 
