@@ -13,7 +13,7 @@
   <meta property="og:url" content="https://safenpm.dev">
   <meta property="og:title" content="safenpm — Sandboxed npm installs">
   <meta property="og:description" content="Drop-in npm install replacement that sandboxes every postinstall script, blocks network access, detects typosquats, and shares alerts across a decentralized threat intelligence network. Zero dependencies.">
-  <meta property="og:image" content="https://safenpm.dev/api/og">
+  <meta property="og:image" content="https://safenpm.dev/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="safenpm — Stop supply-chain attacks before they run">
@@ -23,7 +23,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="safenpm — Sandboxed npm installs">
   <meta name="twitter:description" content="Drop-in npm install replacement that sandboxes every postinstall script, blocks network access, and shares alerts across a decentralized threat intelligence network.">
-  <meta name="twitter:image" content="https://safenpm.dev/api/og">
+  <meta name="twitter:image" content="https://safenpm.dev/og.png">
   <meta name="twitter:image:alt" content="safenpm — Stop supply-chain attacks before they run">
 
   <!-- LinkedIn -->
@@ -642,7 +642,7 @@
 
     <div class="hero-install mono" onclick="copyInstall()">
       <span class="prompt">$</span>
-      <span class="cmd">npm install -g safenpm</span>
+      <span class="cmd">npm install -g @abgunaydin/safenpm</span>
       <button class="copy-btn" title="Copy">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       </button>
@@ -1044,7 +1044,7 @@
       <p>Install safenpm globally and use it as a drop-in replacement for <code class="mono">npm install</code>.</p>
 
       <h4>Install</h4>
-      <pre><code>npm install -g safenpm</code></pre>
+      <pre><code>npm install -g @abgunaydin/safenpm</code></pre>
 
       <h4>Basic usage</h4>
       <pre><code><span class="t-dim"># Instead of npm install:</span>
@@ -1186,7 +1186,7 @@ node-gyp</code></pre>
       <h4>GitHub Actions</h4>
       <pre><code>- name: Install with safenpm
   run: |
-    npm install -g safenpm
+    npm install -g @abgunaydin/safenpm
     safenpm install --json --scan --no-report | tee safenpm-report.json
 
 - name: Check for blocks
@@ -1405,7 +1405,7 @@ safenpm diff --json</code></pre>
     <p>One command. Zero configuration. Full protection.</p>
     <a href="#" class="cta-btn" onclick="copyInstall(); return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-      npm install -g safenpm
+      npm install -g @abgunaydin/safenpm
     </a>
   </div>
 </section>
@@ -1426,7 +1426,7 @@ safenpm diff --json</code></pre>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
 function copyInstall() {
-  navigator.clipboard.writeText('npm install -g safenpm').then(() => {
+  navigator.clipboard.writeText('npm install -g @abgunaydin/safenpm').then(() => {
     const btn = document.querySelector('.copy-btn');
     if (btn) {
       btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';

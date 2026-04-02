@@ -44,7 +44,7 @@
   <!-- Install command box -->
   <rect x="80" y="430" width="400" height="52" rx="10" fill="#12121a" stroke="#1e1e2e" stroke-width="1"/>
   <text x="100" y="463" font-family="monospace" font-size="20" fill="#555570">$</text>
-  <text x="124" y="463" font-family="monospace" font-size="20" fill="#e4e4ef">npm install -g safenpm</text>
+  <text x="124" y="463" font-family="monospace" font-size="20" fill="#e4e4ef">npm install -g @abgunaydin/safenpm</text>
 
   <!-- Bottom badges -->
   <g transform="translate(80, 520)">

@@ -20,7 +20,7 @@ Every year, thousands of malicious packages slip into npm — exfiltrating crede
 ## Quick Start
 
 ```bash
-npm install -g safenpm
+npm install -g @abgunaydin/safenpm
 
 # Use instead of npm install
 safenpm install
