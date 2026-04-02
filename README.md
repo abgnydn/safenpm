@@ -39,8 +39,10 @@ safenpm install
     ├─ 4. Maintainer change alerts         (flag account takeovers)
     ├─ 5. Lockfile integrity check         (detect URL/hash tampering)
     ├─ 6. Reputation scoring               (rate each package 0-100)
-    ├─ 7. Sandboxed execution              (run scripts with no network/fs)
-    └─ 8. Audit logging                    (everything to ~/.safenpm/)
+    ├─ 7. Threat intel query               (check community alert network)
+    ├─ 8. Sandboxed execution              (run scripts with no network/fs)
+    ├─ 9. Anonymous signal reporting        (alert the network if blocked)
+    └─ 10. Audit logging                   (everything to ~/.safenpm/)
 ```
 
 ## Key Features
@@ -62,6 +64,9 @@ Validates `package-lock.json` for non-registry URLs, missing integrity hashes, a
 
 ### Reputation Scoring
 Scores every package 0-100 based on maintainer count, license, repository presence, dependency weight, and maturity. Aggregates into a project-level health grade.
+
+### Decentralized Threat Intelligence Network
+When safenpm blocks a suspicious package, it anonymously reports the signal (package name, script hash, block reason) to the safenpm community network. On every install, safenpm queries this network to check if any of your dependencies have been flagged by other users. The result: if one developer gets hit by a malicious package, every safenpm user is warned automatically. All signals are anonymous — no identifying information leaves your machine.
 
 ### Doctor Command
 Run `safenpm doctor` for a full project health report — letter grade, actionable fixes, and a breakdown of every risk signal across your dependency tree.
