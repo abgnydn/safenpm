@@ -1,5 +1,5 @@
 {
-  "name": "safenpm",
+  "name": "@abgunaydin/safenpm",
   "version": "1.0.0",
   "description": "npm wrapper that sandboxes postinstall scripts, blocks network access, and reports suspicious behavior",
   "keywords": [
