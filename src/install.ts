@@ -136,9 +136,9 @@ export async function install(opts: InstallOptions): Promise<void> {
     }
   }
 
-  // ── v0.4.0: threat intel ──
+  // ── Threat intel: always runs (core security feature) ──
   let threatResults: ThreatIntelResult[] = []
-  if (scan) {
+  {
     threatResults = await checkThreatIntel(
       scripts.map(s => ({ name: s.name, version: s.version }))
     )
