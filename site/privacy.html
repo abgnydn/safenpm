@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — safenpm</title>
+  <meta name="description" content="Privacy policy for safenpm — what data we collect, why, and how it's handled.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #12121a;
+      --border: #1e1e2e;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      max-width: 1100px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo {
+      font-weight: 800; font-size: 18px; letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: inherit;
+    }
+    .nav-logo svg { color: var(--accent); }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--text-dim); font-size: 14px; font-weight: 500; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    .content {
+      padding: 120px 0 80px;
+    }
+
+    h1 {
+      font-size: 36px; font-weight: 800; letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .last-updated {
+      font-size: 14px; color: var(--text-dim); margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 20px; font-weight: 700; margin-top: 40px; margin-bottom: 12px;
+      color: var(--accent);
+    }
+
+    p, li { color: var(--text-dim); font-size: 15px; margin-bottom: 12px; }
+
+    ul { padding-left: 20px; margin-bottom: 16px; }
+    li { margin-bottom: 6px; }
+
+    .highlight {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 24px; margin: 24px 0;
+    }
+    .highlight p { margin-bottom: 0; color: var(--text); font-weight: 500; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-card); padding: 2px 6px; border-radius: 4px;
+      font-size: 13px;
+    }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 24px 0;
+      text-align: center;
+    }
+    footer p { font-size: 13px; color: var(--text-dim); }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 28px; }
+      h2 { font-size: 18px; }
+      .content { padding: 100px 0 60px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 4v6c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      safenpm
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="https://github.com/abgnydn/safenpm">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="content">
+  <div class="container">
+    <h1>Privacy Policy</h1>
+    <p class="last-updated">Last updated: April 3, 2026</p>
+
+    <div class="highlight">
+      <p>safenpm is designed with privacy as a core principle. We collect the minimum data necessary to operate the threat intelligence network. No accounts. No tracking. No personal data.</p>
+    </div>
+
+    <h2>1. The CLI Tool</h2>
+    <p>The safenpm CLI runs entirely on your machine. It does not collect, transmit, or store any personal information. Specifically:</p>
+    <ul>
+      <li>No telemetry or usage analytics</li>
+      <li>No tracking of what packages you install</li>
+      <li>No file system data leaves your machine</li>
+      <li>All sandboxing and static analysis runs locally</li>
+    </ul>
+
+    <h2>2. Threat Intelligence Network</h2>
+    <p>When the CLI queries or reports to the threat intelligence API, the following data is involved:</p>
+
+    <p><strong>Queries (automatic on install):</strong></p>
+    <ul>
+      <li>Package names being installed are sent to check for community flags</li>
+      <li>Your IP address is visible to our server (standard HTTP) but is not logged or stored</li>
+    </ul>
+
+    <p><strong>Signal reports (opt-in via <code>--scan</code>):</strong></p>
+    <ul>
+      <li>Package name and version</li>
+      <li>Reason for flagging (e.g., "network access", "credential exfiltration")</li>
+      <li>Hash of the postinstall script</li>
+      <li>A hash of your IP is used temporarily for rate limiting and deduplication — the raw IP is not stored</li>
+    </ul>
+
+    <h2>3. Website Analytics</h2>
+    <p>The safenpm.dev website uses <a href="https://vercel.com/analytics">Vercel Analytics</a> and <a href="https://vercel.com/docs/speed-insights">Vercel Speed Insights</a>. These collect:</p>
+    <ul>
+      <li>Page views and referrer URLs</li>
+      <li>Anonymous performance metrics (page load times)</li>
+      <li>Country-level geolocation (no city or IP stored)</li>
+      <li>Browser and device type</li>
+    </ul>
+    <p>Vercel Analytics is privacy-focused — it does not use cookies and does not track users across sites. See <a href="https://vercel.com/docs/analytics/privacy-policy">Vercel's privacy policy</a> for details.</p>
+
+    <h2>4. Cookies</h2>
+    <p>safenpm.dev does not set any cookies.</p>
+
+    <h2>5. Third Parties</h2>
+    <p>We do not sell, share, or provide any data to third parties. The only external services involved are:</p>
+    <ul>
+      <li><strong>Vercel</strong> — hosting and analytics</li>
+      <li><strong>Upstash</strong> — threat signal storage (stores only anonymous signal data)</li>
+    </ul>
+
+    <h2>6. Data Retention</h2>
+    <ul>
+      <li>Threat signals are retained as long as they remain relevant to the network</li>
+      <li>Rate-limiting data (IP hashes) expires automatically after 24 hours</li>
+      <li>No personal data is retained because none is collected</li>
+    </ul>
+
+    <h2>7. Your Rights</h2>
+    <p>Since we don't collect personal data, there is typically nothing to request deletion of. If you have concerns about a specific signal report, contact us via <a href="https://github.com/abgnydn/safenpm/issues">GitHub Issues</a>.</p>
+
+    <h2>8. Changes</h2>
+    <p>We may update this policy as the project evolves. Changes will be reflected on this page with an updated date.</p>
+
+    <h2>9. Contact</h2>
+    <p>For privacy questions, open an issue on <a href="https://github.com/abgnydn/safenpm">GitHub</a> or reach out to the maintainer.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <p>safenpm v1.0.0 &middot; MIT License</p>
+  </div>
+</footer>
+
+</body>
+</html>
