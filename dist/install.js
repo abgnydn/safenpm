@@ -309,7 +309,7 @@ function outputJson(results, analyses, backend, typosquats, lockfileResult, repu
         })),
     } : null;
     const output = {
-        version: '0.5.0',
+        version: '1.0.0',
         backend,
         timestamp: new Date().toISOString(),
         packages: pkgResults,
@@ -407,7 +407,7 @@ function dryRunFlow(packages, allowlist, json, scan) {
             };
         });
         const output = {
-            version: '0.5.0',
+            version: '1.0.0',
             backend: (0, sandbox_1.backendName)(),
             timestamp: new Date().toISOString(),
             packages: pkgResults,

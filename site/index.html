@@ -61,6 +61,7 @@
       color: var(--text);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     a { color: var(--accent); text-decoration: none; }
@@ -599,12 +600,109 @@
       background: rgba(34,197,94,0.1); border-color: var(--accent-dim); color: var(--text);
     }
 
+    /* ── Mobile Nav Toggle ── */
+    .nav-toggle {
+      display: none; background: none; border: none;
+      color: var(--text-dim); cursor: pointer; padding: 8px;
+    }
+
     /* ── Responsive ── */
-    @media (max-width: 640px) {
-      .nav-links { gap: 16px; }
-      .feature-grid { grid-template-columns: 1fr; }
-      .hero-install { flex-direction: column; padding: 16px 20px; }
-      .play-body { height: 320px; }
+    @media (max-width: 768px) {
+      /* Nav: hamburger */
+      nav .container { position: relative; }
+      .nav-toggle { display: block; }
+      .nav-links {
+        display: none; position: fixed; top: 60px; left: 0; right: 0;
+        background: #0a0a0f; backdrop-filter: blur(16px);
+        flex-direction: column; gap: 0; padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        z-index: 200; width: 100%;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a {
+        padding: 14px 24px; display: block; width: 100%;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+      }
+      .nav-links a:hover { background: rgba(255,255,255,0.03); }
+      .nav-badge { display: none; }
+
+      /* Hero */
+      .hero { padding: 100px 0 60px; }
+      .hero h1 { font-size: 32px; letter-spacing: -1px; }
+      .hero p { font-size: 15px; }
+      .hero-install { flex-direction: column; padding: 14px 18px; font-size: 13px; gap: 8px; }
+      .hero-badges { gap: 8px; }
+      .badge { font-size: 11px; padding: 5px 10px; }
+
+      /* Terminal */
+      .terminal-section { padding: 20px 0 40px; }
+      .terminal-body { font-size: 11px; padding: 12px; }
+
+      /* Playground */
+      .play-body { height: 280px; font-size: 12px; }
+      .playground-section .subtitle { font-size: 13px; }
+      .quick-cmds { gap: 6px; }
+      .quick-chip { font-size: 11px; padding: 5px 10px; }
+
+      /* Features */
+      .features { padding: 60px 0; }
+      .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+      .feature-card { padding: 20px; }
+      .section-title { font-size: 24px !important; }
+      .section-desc { font-size: 14px; }
+      .section-label { font-size: 11px; }
+
+      /* Threat network */
+      .threat-network { padding: 60px 0; }
+      .threat-flow { flex-direction: column; gap: 16px; margin: 40px 0; }
+      .threat-arrow { transform: rotate(90deg); }
+      .threat-details { grid-template-columns: 1fr; gap: 12px; }
+      .threat-detail-card { padding: 18px; }
+      .threat-detail-card h4 { font-size: 14px; }
+      .threat-detail-card p { font-size: 12px; }
+
+      /* Stats dashboard */
+      .stats-dashboard { padding: 60px 0; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 32px 0 24px; }
+      .stat-card { padding: 20px 16px; }
+      .stat-number { font-size: 28px; }
+      .stat-label { font-size: 11px; }
+      .stats-panels { grid-template-columns: 1fr; gap: 12px; }
+      .stats-panel { padding: 18px; min-height: auto; }
+      .category-name { width: 100px; font-size: 11px; }
+      .feed-item { font-size: 12px; gap: 8px; }
+      .feed-pkg { font-size: 12px; }
+      .feed-reason { font-size: 11px; }
+      .feed-time { font-size: 10px; }
+
+      /* Platforms */
+      .platforms { padding: 60px 0; }
+      .platform-table { font-size: 12px; }
+      .platform-table th { padding: 10px 12px; font-size: 11px; }
+      .platform-table td { padding: 10px 12px; font-size: 12px; }
+
+      /* Docs */
+      .docs { padding: 60px 0; }
+      .docs-nav { gap: 6px; }
+      .docs-nav button { font-size: 12px; padding: 7px 12px; }
+      .doc-section { padding: 20px; }
+      .doc-section h3 { font-size: 18px; }
+      .doc-section h4 { font-size: 14px; }
+      .doc-section p { font-size: 13px; }
+      .doc-section pre { font-size: 12px; }
+      .options-table td, .options-table th { padding: 8px 10px; font-size: 12px; }
+
+      /* CTA */
+      .cta-section { padding: 60px 0; }
+      .cta-section h2 { font-size: 28px; }
+      .cta-section p { font-size: 14px; }
+
+      /* Footer */
+      footer .container { flex-direction: column; text-align: center; gap: 12px; }
+      .footer-links { justify-content: center; }
+
+      /* General */
+      .container { padding: 0 16px; }
     }
   </style>
 </head>
@@ -616,6 +714,9 @@
     <a href="/" class="nav-logo" style="text-decoration:none;color:inherit;">
       <span class="shield"><i data-lucide="shield-check" style="width:22px;height:22px;color:var(--accent);vertical-align:-4px;"></i></span> safenpm
     </a>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <div class="nav-links">
       <a href="#playground">Try It</a>
       <a href="#features">Features</a>
@@ -1447,6 +1548,12 @@ function showDoc(id) {
 // Initialize Lucide icons
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
+  // Close mobile nav on link click
+  document.querySelectorAll('.nav-links a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      document.querySelector('.nav-links').classList.remove('open');
+    });
+  });
 });
 // Also try immediately in case DOM is already ready
 if (typeof lucide !== 'undefined') lucide.createIcons();

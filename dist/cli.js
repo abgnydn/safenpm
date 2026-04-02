@@ -354,7 +354,7 @@ async function main() {
         }
         case '--version':
         case '-v':
-            console.log('safenpm 0.5.0');
+            console.log('safenpm 1.0.0');
             break;
         case '--help':
         case '-h':
