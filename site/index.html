@@ -867,9 +867,13 @@
     <div class="section-label" style="color: var(--magenta);">Decentralized Intelligence</div>
     <div class="section-title">One developer blocks it.<br>Every developer knows.</div>
     <div class="section-desc" style="max-width: 680px;">
-      safenpm runs a decentralized threat intelligence network. When a malicious package is blocked on any machine,
-      an anonymous signal — package name, script hash, block reason — is shared with the community.
-      On every install, safenpm queries this network so threats are flagged before they can execute.
+      safenpm runs a decentralized threat intelligence network with built-in anti-abuse safeguards.
+      When a malicious package is blocked on any machine, an anonymous signal — package name, script hash,
+      block reason — is shared with the community. Rate limiting, deduplication, and threshold-based flagging
+      prevent manipulation. A package requires reports from at least 3 distinct reporters to be flagged
+      (15 for high-traffic packages like lodash or express), and script hash consistency checks ensure signals
+      match real install behavior. On every install, safenpm queries this network so threats are flagged
+      before they can execute.
     </div>
 
     <div class="threat-flow">
@@ -918,7 +922,8 @@
     <div class="section-label" style="color: var(--cyan);">Transparent Network</div>
     <div class="section-title">Live Threat Intelligence</div>
     <div class="section-desc">
-      Every signal flowing through the safenpm network — fully transparent, fully anonymous.
+      A live, transparent view of the real safenpm threat network. Every signal flowing through the network
+      is visible here in real time — fully transparent, fully anonymous.
     </div>
 
     <div class="stats-grid">
@@ -1140,8 +1145,10 @@ safenpm scan --json</code></pre>
         and a project-level health grade.
       </p>
       <p>
-        <strong>Community threat intel</strong> checks packages against the safenpm intelligence network,
-        surfacing flagged packages with report counts and attack categories.
+        <strong>Community threat intel</strong> runs automatically on every install — not just with <code class="mono">--scan</code>.
+        Each time you run <code class="mono">safenpm install</code>, packages are checked against the live
+        decentralized intelligence network, surfacing flagged packages with report counts and attack categories
+        before any scripts execute.
       </p>
     </div>
 
