@@ -350,7 +350,7 @@ function outputJson(
   } : null
 
   const output: JsonOutput = {
-    version: '0.5.0',
+    version: '1.0.0',
     backend,
     timestamp: new Date().toISOString(),
     packages: pkgResults,
@@ -457,7 +457,7 @@ function dryRunFlow(packages: string[], allowlist: Set<string>, json: boolean, s
     })
 
     const output: JsonOutput = {
-      version: '0.5.0',
+      version: '1.0.0',
       backend: backendName(),
       timestamp: new Date().toISOString(),
       packages: pkgResults,

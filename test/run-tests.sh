@@ -1,5 +1,5 @@
 #!/bin/bash
-# safenpm integration test suite — v0.5.0
+# safenpm integration test suite — v1.0.0
 # Usage: cd safenpm && npm run build && bash test/run-tests.sh
 
 set -e
@@ -30,7 +30,7 @@ trap cleanup EXIT
 CLI="node $PROJECT_DIR/dist/cli.js"
 
 bold ""
-bold "  safenpm test suite v0.5.0"
+bold "  safenpm test suite v1.0.0"
 bold "  ─────────────────────────"
 echo ""
 
@@ -38,7 +38,7 @@ echo ""
 bold "  CLI Commands"
 
 OUT=$($CLI --version 2>&1)
-assert_eq "$OUT" "safenpm 0.5.0" "--version shows 0.5.0"
+assert_eq "$OUT" "safenpm 1.0.0" "--version shows 1.0.0"
 OUT=$($CLI --help 2>&1)
 assert_contains "$OUT" "--json" "--help documents --json"
 assert_contains "$OUT" "--interactive" "--help documents --interactive"

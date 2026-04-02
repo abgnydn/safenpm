@@ -422,7 +422,7 @@
       <a href="index.html#docs">Docs</a>
       <a href="#showcase">Showcase</a>
       <a href="https://github.com/user/safenpm" target="_blank">GitHub</a>
-      <span class="nav-badge">v0.5.0</span>
+      <span class="nav-badge">v1.0.0</span>
     </div>
   </div>
 </nav>
@@ -500,10 +500,10 @@
           <div class="terminal-dot red"></div>
           <div class="terminal-dot yellow"></div>
           <div class="terminal-dot green"></div>
-          <div class="terminal-title">safenpm v0.5.0 — interactive playground</div>
+          <div class="terminal-title">safenpm v1.0.0 — interactive playground</div>
         </div>
         <div class="terminal-body" id="termBody">
-          <div class="terminal-line"><span class="t-green t-bold">safenpm v0.5.0</span> <span class="t-dim">— interactive playground</span></div>
+          <div class="terminal-line"><span class="t-green t-bold">safenpm v1.0.0</span> <span class="t-dim">— interactive playground</span></div>
           <div class="terminal-line"><span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> to see available commands, or try the quick commands below.</span></div>
           <div class="terminal-line">&nbsp;</div>
         </div>
@@ -526,7 +526,7 @@
 
 <footer>
   <div class="container">
-    safenpm v0.5.0 &mdash; MIT License &mdash; <a href="index.html">Back to home</a>
+    safenpm v1.0.0 &mdash; MIT License &mdash; <a href="index.html">Back to home</a>
   </div>
 </footer>
 
@@ -974,7 +974,7 @@ function getCompletions(val) {
 
 function clearTerminal() {
   termBody.innerHTML = '';
-  line('<span class="t-green t-bold">safenpm v0.5.0</span> <span class="t-dim">— interactive playground</span>');
+  line('<span class="t-green t-bold">safenpm v1.0.0</span> <span class="t-dim">— interactive playground</span>');
   line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> to see available commands.</span>');
   line('');
   addPrompt();
@@ -1014,7 +1014,7 @@ function executeCommand(raw) {
     if (sub === 'doctor') return cmdDoctor();
     if (sub === 'diff') return cmdDiff(arg);
     if (sub === 'fix') return cmdFix(arg);
-    if (sub === '--version' || sub === '-v') { line('<span class="t-green">0.5.0</span>'); line(''); addPrompt(); return; }
+    if (sub === '--version' || sub === '-v') { line('<span class="t-green">1.0.0</span>'); line(''); addPrompt(); return; }
     if (!sub) { line('<span class="t-dim">Usage: safenpm &lt;command&gt; [args]</span>'); line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> for available commands.</span>'); line(''); addPrompt(); return; }
     line(`<span class="t-red">Unknown command:</span> safenpm ${escHtml(sub)}`);
     line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> for available commands.</span>');
@@ -1156,7 +1156,7 @@ function cmdInstall(name) {
   const pkg = PKG_DB[name];
   const lines = [];
 
-  lines.push(`<span class="t-green t-bold">safenpm</span> <span class="t-dim">v0.5.0</span>`);
+  lines.push(`<span class="t-green t-bold">safenpm</span> <span class="t-dim">v1.0.0</span>`);
   lines.push('');
   lines.push(`<span class="t-dim">⏳ Phase 1: Pre-install scan...</span>`);
 
@@ -1261,7 +1261,7 @@ function cmdDoctor() {
   const gradeClass = overallGrade.startsWith('A') ? 't-green' : overallGrade.startsWith('B') ? 't-blue' : 't-yellow';
 
   const lines = [];
-  lines.push('<span class="t-green t-bold">safenpm doctor</span> <span class="t-dim">v0.5.0</span>');
+  lines.push('<span class="t-green t-bold">safenpm doctor</span> <span class="t-dim">v1.0.0</span>');
   lines.push('');
 
   // Big grade display

@@ -31,7 +31,7 @@
 
   <!-- Logo text -->
   <text x="145" y="118" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="700" fill="#22c55e">safenpm</text>
-  <text x="310" y="118" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="400" fill="#555570">v0.5.0</text>
+  <text x="310" y="118" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="400" fill="#555570">v1.0.0</text>
 
   <!-- Title -->
   <text x="80" y="230" font-family="system-ui, -apple-system, sans-serif" font-size="58" font-weight="800" fill="#e4e4ef" letter-spacing="-1">Stop supply-chain attacks</text>

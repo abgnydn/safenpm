@@ -623,7 +623,7 @@
       <a href="showcase.html">Showcase</a>
       <a href="#dashboard">Dashboard</a>
       <a href="https://github.com/abgnydn/safenpm">GitHub</a>
-      <span class="nav-badge">v0.5.0</span>
+      <span class="nav-badge">v1.0.0</span>
     </div>
   </div>
 </nav>
@@ -763,10 +763,10 @@
           <div class="play-dot red"></div>
           <div class="play-dot yellow"></div>
           <div class="play-dot green"></div>
-          <div class="play-title">safenpm v0.5.0 — interactive playground</div>
+          <div class="play-title">safenpm v1.0.0 — interactive playground</div>
         </div>
         <div class="play-body" id="playBody">
-          <div class="play-line"><span class="p-green p-bold">safenpm v0.5.0</span> <span class="p-dim">— interactive playground</span></div>
+          <div class="play-line"><span class="p-green p-bold">safenpm v1.0.0</span> <span class="p-dim">— interactive playground</span></div>
           <div class="play-line"><span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> to see available commands, or click a quick command below.</span></div>
           <div class="play-line">&nbsp;</div>
         </div>
@@ -1200,7 +1200,7 @@ node-gyp</code></pre>
 
       <h4>JSON output structure</h4>
       <pre><code>{
-  "version": "0.5.0",
+  "version": "1.0.0",
   "backend": "sandbox-exec (macOS)",
   "packages": [...],
   "typosquats": [...],
@@ -1413,7 +1413,7 @@ safenpm diff --json</code></pre>
 <!-- Footer -->
 <footer>
   <div class="container">
-    <p>safenpm v0.5.0 &middot; MIT License</p>
+    <p>safenpm v1.0.0 &middot; MIT License</p>
     <div class="footer-links">
       <a href="https://github.com/abgnydn/safenpm">GitHub</a>
       <a href="https://www.npmjs.com/package/safenpm">npm</a>
@@ -1548,7 +1548,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 
   function clearTerm() {
     body.innerHTML='';
-    ln('<span class="p-green p-bold">safenpm v0.5.0</span> <span class="p-dim">— interactive playground</span>');
+    ln('<span class="p-green p-bold">safenpm v1.0.0</span> <span class="p-dim">— interactive playground</span>');
     ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> to see available commands.</span>');
     ln(''); prompt();
   }
@@ -1566,7 +1566,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
       if(sub==='doctor')return cmdDoctor();
       if(sub==='diff')return cmdDiff(arg);
       if(sub==='fix')return cmdFix(arg);
-      if(sub==='--version'||sub==='-v'){ln('<span class="p-green">0.5.0</span>');ln('');prompt();return;}
+      if(sub==='--version'||sub==='-v'){ln('<span class="p-green">1.0.0</span>');ln('');prompt();return;}
       if(!sub){ln('<span class="p-dim">Usage: safenpm &lt;command&gt; [args]. Type </span><span class="p-cyan">help</span><span class="p-dim"> for commands.</span>');ln('');prompt();return;}
       ln('<span class="p-red">Unknown command:</span> safenpm '+esc(sub));ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> for available commands.</span>');ln('');prompt();return;
     }
@@ -1639,7 +1639,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
   function cmdInstall(name) {
     if(!name){ln('<span class="p-red">Usage:</span> safenpm install &lt;package-name&gt;');ln('');prompt();return;}
     const typo=checkTypo(name), p=PKG_DATA[name], l=[];
-    l.push('<span class="p-green p-bold">safenpm</span> <span class="p-dim">v0.5.0</span>','','<span class="p-dim">⏳ Phase 1: Pre-install scan...</span>');
+    l.push('<span class="p-green p-bold">safenpm</span> <span class="p-dim">v1.0.0</span>','','<span class="p-dim">⏳ Phase 1: Pre-install scan...</span>');
     if(typo){
       l.push('  <span class="p-red">⚠ Typosquat:</span> <span class="p-red">'+esc(typo.suspect)+'</span> → <span class="p-yellow">'+esc(typo.target)+'</span> <span class="p-dim">('+typo.tech+')</span>',
         '  <span class="p-red p-bold">✗ INSTALL BLOCKED</span>','',
@@ -1684,7 +1684,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
     const ov=secs.reduce((s,c)=>s+c.s*c.w/100,0);
     const og=ov>=97?'A+':ov>=93?'A':ov>=90?'A-':ov>=87?'B+':ov>=83?'B':ov>=80?'B-':ov>=77?'C+':ov>=73?'C':'C-';
     const gc=og.startsWith('A')?'p-green':og.startsWith('B')?'p-blue':'p-yellow';
-    const l=['<span class="p-green p-bold">safenpm doctor</span> <span class="p-dim">v0.5.0</span>','',
+    const l=['<span class="p-green p-bold">safenpm doctor</span> <span class="p-dim">v1.0.0</span>','',
       '  <span class="'+gc+' p-bold">┌─────────────┐</span>',
       '  <span class="'+gc+' p-bold">│  Grade: '+og.padEnd(3)+' │</span>',
       '  <span class="'+gc+' p-bold">│  Score: '+Math.round(ov).toString().padEnd(3)+' │</span>',

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1200px; height: 630px; overflow: hidden; }
+.card {
+  width: 1200px; height: 630px;
+  background: linear-gradient(135deg, #0a0a0f 0%, #0f1019 100%);
+  padding: 60px 80px;
+  font-family: system-ui, -apple-system, sans-serif;
+  display: flex; flex-direction: column; justify-content: center;
+  position: relative;
+}
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, rgba(34,197,94,0.03) 0%, transparent 50%),
+    linear-gradient(225deg, rgba(6,182,212,0.03) 0%, transparent 50%);
+}
+.top { display: flex; align-items: center; margin-bottom: 28px; position: relative; }
+.shield {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(34,197,94,0.12);
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 16px; font-size: 26px;
+}
+.logo { color: #22c55e; font-size: 32px; font-weight: 700; }
+.ver { color: #555570; font-size: 22px; margin-left: 14px; }
+.title {
+  font-size: 54px; font-weight: 800; color: #e4e4ef;
+  line-height: 1.15; letter-spacing: -1px; margin-bottom: 24px;
+  position: relative;
+}
+.grad {
+  background: linear-gradient(135deg, #22c55e, #06b6d4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.desc {
+  font-size: 22px; color: #8888a0; line-height: 1.5;
+  margin-bottom: 36px; position: relative;
+}
+.cmd {
+  display: inline-flex; align-items: center;
+  background: #12121a; border: 1px solid #1e1e2e;
+  border-radius: 12px; padding: 14px 24px;
+  font-family: 'SF Mono', 'Menlo', monospace; font-size: 20px;
+  position: relative;
+}
+.cmd .dollar { color: #555570; margin-right: 12px; }
+.cmd .text { color: #e4e4ef; }
+.badges {
+  display: flex; gap: 12px; margin-top: 36px; position: relative;
+}
+.badge {
+  background: rgba(255,255,255,0.04); border: 1px solid #1e1e2e;
+  border-radius: 20px; padding: 8px 18px;
+  font-size: 15px; color: #8888a0;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top">
+    <div class="shield">🛡️</div>
+    <span class="logo">safenpm</span>
+    <span class="ver">v1.0.0</span>
+  </div>
+  <div class="title">
+    Stop supply-chain attacks<br>
+    <span class="grad">before they run</span>
+  </div>
+  <div class="desc">
+    Sandboxed npm installs with static analysis, typosquat detection,<br>
+    and a decentralized threat intelligence network.
+  </div>
+  <div class="cmd">
+    <span class="dollar">$</span>
+    <span class="text">npm install -g safenpm</span>
+  </div>
+  <div class="badges">
+    <span class="badge">Zero deps</span>
+    <span class="badge">TypeScript</span>
+    <span class="badge">macOS + Linux + Windows</span>
+    <span class="badge">MIT License</span>
+  </div>
+</div>
+</body>
+</html>

@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue" alt="Platform">
   <img src="https://img.shields.io/badge/node-%3E%3D18-green" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="License">
-  <img src="https://img.shields.io/badge/version-0.5.0-orange" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.0.0-orange" alt="Version">
 </p>
 
 # safenpm
