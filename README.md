@@ -1,116 +1,108 @@
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue" alt="Platform">
+  <img src="https://img.shields.io/badge/node-%3E%3D18-green" alt="Node">
+  <img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="License">
+  <img src="https://img.shields.io/badge/version-0.5.0-orange" alt="Version">
+</p>
+
 # safenpm
 
-Drop-in `npm install` replacement that sandboxes postinstall scripts. Blocks network access, restricts filesystem reads, and catches supply-chain attacks before they land.
+**Drop-in `npm install` replacement that sandboxes postinstall scripts, blocks network access, and catches supply-chain attacks before they execute.**
 
-## Install
+Every year, thousands of malicious packages slip into npm — exfiltrating credentials via postinstall scripts, opening reverse shells, or stealing SSH keys. `safenpm` wraps `npm install` with a security-first pipeline: static analysis, sandboxed execution, typosquat detection, maintainer change alerts, and lockfile integrity checks — all in one command.
+
+<p align="center">
+  <a href="https://safenpm.vercel.app"><strong>Website</strong></a> · <a href="https://safenpm.vercel.app/showcase.html"><strong>Showcase</strong></a> · <a href="#quick-start"><strong>Quick Start</strong></a> · <a href="#docs"><strong>Docs</strong></a>
+</p>
+
+---
+
+## Quick Start
 
 ```bash
 npm install -g safenpm
+
+# Use instead of npm install
+safenpm install
 ```
+
+That's it. Your install scripts now run inside a sandbox with no network access and restricted filesystem. If anything suspicious is detected, safenpm blocks it and tells you exactly what happened.
+
+## How It Works
+
+```
+safenpm install
+    │
+    ├─ 1. npm install --ignore-scripts     (safe — nothing executes)
+    ├─ 2. Static analysis                  (scan scripts for red flags)
+    ├─ 3. Typosquat detection              (catch axois → axios)
+    ├─ 4. Maintainer change alerts         (flag account takeovers)
+    ├─ 5. Lockfile integrity check         (detect URL/hash tampering)
+    ├─ 6. Reputation scoring               (rate each package 0-100)
+    ├─ 7. Sandboxed execution              (run scripts with no network/fs)
+    └─ 8. Audit logging                    (everything to ~/.safenpm/)
+```
+
+## Key Features
+
+### Sandbox Isolation
+Every postinstall script runs inside an OS-level sandbox. Network access is fully denied. Filesystem access is restricted — scripts cannot read `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.npmrc`, or shell histories. Sensitive env vars (`NPM_TOKEN`, `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, etc.) are stripped before execution.
+
+### Static Analysis Engine
+Before anything runs, scripts are scanned for: network tools (`curl`, `wget`, `nc`), credential access (`~/.ssh`, `process.env`), code execution patterns (`eval()`, base64 decoding, `| sh`), and obfuscation (hex/unicode escapes). Each package receives a risk score (0-100).
+
+### Typosquat Detection
+Catches common squatting patterns — character swaps, missing hyphens, scope confusion (`@evil/lodash`) — using edit-distance analysis and a curated list of popular packages.
+
+### Maintainer Change Monitoring
+Flags packages where maintainers changed recently, a common indicator of account takeover attacks.
+
+### Lockfile Integrity
+Validates `package-lock.json` for non-registry URLs, missing integrity hashes, and other signs of lockfile injection.
+
+### Reputation Scoring
+Scores every package 0-100 based on maintainer count, license, repository presence, dependency weight, and maturity. Aggregates into a project-level health grade.
+
+### Doctor Command
+Run `safenpm doctor` for a full project health report — letter grade, actionable fixes, and a breakdown of every risk signal across your dependency tree.
 
 ## Usage
 
 ```bash
-# instead of npm install
-safenpm install axios lodash express
-
-# shorthand
-safenpm i
-
-# preview what would be sandboxed
-safenpm i --dry-run
-
-# trust specific packages
-safenpm i --allow bcrypt,sharp
-
-# CI mode — machine-readable JSON
-safenpm i --json
-
-# prompt on each block: retry / skip / abort
-safenpm i --interactive
-
-# view past runs
-safenpm audit
+safenpm install                     # sandboxed install
+safenpm i                           # shorthand
+safenpm i --dry-run                 # preview what would be sandboxed
+safenpm i --allow bcrypt,sharp      # trust specific packages
+safenpm i --json                    # CI-friendly JSON output
+safenpm i --interactive             # prompt on each block
+safenpm audit                       # view past runs
+safenpm doctor                      # project health report
+safenpm scan                        # scan without installing
 ```
 
-## What it does
+## Platform Support
 
-1. Runs `npm install --ignore-scripts` (safe — no code runs)
-2. Scans all install scripts for red flags (curl, eval, base64, ~/.ssh access, etc.)
-3. Runs each script inside a sandbox with **no network access** and **restricted filesystem**
-4. Logs everything to `~/.safenpm/audit.log`
-5. Reports blocked packages anonymously to the safenpm network
-6. Exits non-zero if anything was blocked
+| Platform | Sandbox Backend | Status |
+|----------|----------------|--------|
+| **macOS** | `sandbox-exec` (built-in) | Full support |
+| **Linux** | `firejail` | Full support |
+| **Windows** (admin) | Firewall + ACLs | Experimental |
+| **Windows** (WSL) | WSL + firejail | Experimental |
 
-## Platform support
-
-| Platform | Backend | Status |
-|----------|---------|--------|
-| macOS | `sandbox-exec` (built-in) | Full support (deny-default profile) |
-| Linux | `firejail` | Full support (`sudo apt install firejail`) |
-| Windows (admin) | Firewall + ACLs | Experimental — blocks network via `New-NetFirewallRule`, restricts filesystem via `icacls` |
-| Windows (non-admin) | WSL + firejail | Experimental — requires WSL with firejail installed |
-| Windows (no WSL) | — | Falls back to plain npm (env vars still stripped) |
-
-> **Note:** safenpm is invoked as `safenpm install`, not as a transparent `npm` alias. It is a separate command that wraps npm.
-
-## Sandbox protections
-
-**Network** — All outbound/inbound network access is denied. Packages that try to `curl`, `wget`, `fetch()`, or open sockets are blocked and reported.
-
-**Filesystem** (strict mode, default) — Install scripts cannot read `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.npmrc`, `~/.docker`, `~/.kube`, or shell histories. Writes are restricted to the package directory and `/tmp`.
-
-**Environment** — Sensitive env vars are stripped: `NPM_TOKEN`, `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, and 7 others.
-
-Use `--loose` to disable filesystem restrictions (network-only sandbox).
-
-## Static analysis
-
-Before running anything, safenpm scans scripts for:
-
-- Network tools: `curl`, `wget`, `nc`, `fetch()`, `require('https')`
-- Credential access: `~/.ssh`, `~/.aws`, `process.env`
-- Code execution: `eval()`, base64 decoding, `| sh` piping
-- Obfuscation: hex/unicode escape sequences
-
-Each package gets a risk score (0-100) shown before execution.
-
-## Allowlisting
-
-Trust packages via CLI or config file:
-
-```bash
-# CLI
-safenpm i --allow bcrypt,sharp,@mapbox/*
-
-# .safenpmrc (project root or ~/.safenpmrc)
-bcrypt
-sharp
-@mapbox/*
-```
-
-Supports exact names and `@scope/*` wildcards.
-
-## CI integration
+## CI Integration
 
 ```yaml
 # GitHub Actions
-- run: npx safenpm i --json --no-report > safenpm-report.json
-- run: |
+- name: Secure install
+  run: npx safenpm install --json --no-report > safenpm-report.json
+
+- name: Check for blocks
+  run: |
     blocked=$(jq '.summary.blocked' safenpm-report.json)
     if [ "$blocked" -gt 0 ]; then
-      echo "Supply chain risk detected"
+      echo "::error::Supply chain risk detected"
       exit 1
     fi
-```
-
-## Audit log
-
-Every run is logged to `~/.safenpm/audit.log` (JSONL format, auto-rotates at 5MB).
-
-```bash
-safenpm audit          # human-readable
-safenpm audit --json   # machine-readable
 ```
 
 ## Options
@@ -120,33 +112,44 @@ safenpm audit --json   # machine-readable
 | `--dry-run`, `-n` | Preview without executing |
 | `--allow <pkgs>` | Comma-separated allowlist |
 | `--json` | JSON output for CI |
-| `--interactive`, `-I` | Prompt on blocks |
-| `--loose` | Network-only sandbox |
+| `--interactive`, `-I` | Prompt on each block |
+| `--loose` | Network-only sandbox (skip filesystem restrictions) |
 | `--no-report` | Disable anonymous reporting |
 
-## Threat model
+## Allowlisting
 
-**What safenpm protects against:**
+Trust packages via CLI or config file:
 
+```bash
+safenpm i --allow bcrypt,sharp,@mapbox/*
+```
+
+Or create a `.safenpmrc` in your project root (or `~/.safenpmrc`):
+
+```
+bcrypt
+sharp
+@mapbox/*
+```
+
+## Threat Model
+
+**Protects against:**
 - Malicious postinstall/preinstall scripts that exfiltrate credentials or open reverse shells
-- Typosquatting attacks (e.g., `axois` instead of `axios`)
-- Dependency confusion via scope confusion (`@evil/lodash`)
-- Sudden maintainer changes that may indicate account takeover
+- Typosquatting attacks (`axois` instead of `axios`)
+- Dependency confusion via scope confusion
+- Maintainer account takeovers
 - Lockfile manipulation (non-registry URLs, missing integrity hashes)
 
-**What safenpm does NOT protect against:**
+**Does NOT protect against:**
+- Malicious code in package source (not in install scripts)
+- Build-time attacks in webpack/babel plugins
+- Pre-existing compromised packages in your lockfile
+- Registry-level compromise
 
-- Malicious code in the package source itself (not in install scripts)
-- CI/CD pipeline attacks or registry mirror tampering
-- Build-time attacks in webpack/babel plugins that execute at `npm run build`
-- Pre-existing compromised packages already in your lockfile before safenpm was adopted
-- Time-of-check-to-time-of-use (TOCTOU) attacks between scanning and execution
+## Architecture
 
-**Assumptions:**
-
-- The attacker delivers their payload via npm install hooks (preinstall, install, postinstall)
-- The local npm registry (registry.npmjs.org) is not compromised
-- The host OS sandbox mechanisms (sandbox-exec, firejail) are functioning correctly
+Zero production dependencies. Built with TypeScript, compiled to standalone JS. The sandbox layer uses OS-native mechanisms — no Docker, no VMs, no heavy runtimes.
 
 ## License
 
