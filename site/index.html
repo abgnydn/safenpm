@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>safenpm — Sandboxed npm installs</title>
+  <meta name="description" content="Drop-in npm install replacement that sandboxes postinstall scripts, catches supply-chain attacks, and scans for typosquats, maintainer hijacks, and more.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-code: #0d0d14;
+      --border: #1e1e2e;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --magenta: #a855f7;
+      --orange: #f97316;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    code, .mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo {
+      font-weight: 800; font-size: 18px; letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo .shield { color: var(--accent); font-size: 22px; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--text-dim); font-size: 14px; font-weight: 500; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-badge {
+      background: var(--accent-dim); color: #fff; font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 0 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(34, 197, 94, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 72px); font-weight: 800;
+      line-height: 1.1; letter-spacing: -2px;
+      margin-bottom: 20px;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 18px; color: var(--text-dim); max-width: 600px;
+      margin: 0 auto 36px; line-height: 1.7;
+    }
+
+    .hero-install {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--bg-code); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 24px;
+      font-size: 16px; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .hero-install:hover { border-color: var(--accent); }
+    .hero-install .prompt { color: var(--text-dim); }
+    .hero-install .cmd { color: var(--accent); font-weight: 600; }
+    .hero-install .copy-btn {
+      background: none; border: none; color: var(--text-dim);
+      cursor: pointer; font-size: 16px; padding: 4px;
+      transition: color 0.2s;
+    }
+    .hero-install .copy-btn:hover { color: var(--text); }
+
+    .hero-badges {
+      margin-top: 28px; display: flex; justify-content: center;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .badge .dot.green { background: var(--accent); }
+    .badge .dot.blue { background: var(--blue); }
+    .badge .dot.yellow { background: var(--yellow); }
+
+    /* ── Terminal demo ── */
+    .terminal-section { padding: 40px 0 80px; }
+
+    .terminal {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 800px;
+      margin: 0 auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+    .terminal-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+    .terminal-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .terminal-dot.r { background: #ff5f57; }
+    .terminal-dot.y { background: #febc2e; }
+    .terminal-dot.g { background: #28c840; }
+    .terminal-bar span { color: var(--text-dim); font-size: 12px; margin-left: 8px; }
+
+    .terminal-body {
+      padding: 20px 24px; font-size: 13.5px; line-height: 1.8;
+      overflow-x: auto;
+    }
+    .terminal-body .line { white-space: pre; }
+    .t-prompt { color: var(--text-dim); }
+    .t-cmd { color: #fff; font-weight: 600; }
+    .t-green { color: var(--accent); }
+    .t-red { color: var(--red); }
+    .t-yellow { color: var(--yellow); }
+    .t-cyan { color: var(--cyan); }
+    .t-dim { color: var(--text-dim); }
+    .t-blue { color: var(--blue); }
+    .t-bold { font-weight: 700; color: #fff; }
+    .t-magenta { color: var(--magenta); }
+
+    /* ── Features ── */
+    .features { padding: 80px 0; }
+    .section-label {
+      text-transform: uppercase; font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; color: var(--accent); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 40px); font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 16px; color: var(--text-dim); max-width: 600px;
+      margin-bottom: 48px;
+    }
+
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(34, 197, 94, 0.3);
+      transform: translateY(-2px);
+    }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 16px;
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--accent);
+    }
+    .feature-icon i[data-lucide] { width: 20px; height: 20px; }
+    .feature-card h3 {
+      font-size: 17px; font-weight: 700; margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 14px; color: var(--text-dim); line-height: 1.6;
+    }
+
+    /* ── Platform table ── */
+    .platforms { padding: 80px 0; }
+    .platform-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .platform-table th {
+      text-align: left; padding: 14px 20px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 1px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    .platform-table td {
+      padding: 14px 20px; font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .platform-table tr:last-child td { border-bottom: none; }
+    .check { color: var(--accent); font-weight: bold; }
+    .cross { color: var(--text-dim); }
+
+    /* ── Docs ── */
+    .docs { padding: 80px 0; }
+    .docs-nav {
+      display: flex; gap: 8px; margin-bottom: 40px; flex-wrap: wrap;
+    }
+    .docs-nav button {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-dim); font-size: 13px; font-weight: 600;
+      padding: 8px 18px; border-radius: 8px; cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .docs-nav button:hover { border-color: var(--accent); color: var(--text); }
+    .docs-nav button.active {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .doc-section { display: none; }
+    .doc-section.active { display: block; }
+
+    .doc-section h3 {
+      font-size: 22px; font-weight: 700; margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .doc-section h4 {
+      font-size: 16px; font-weight: 700; margin: 28px 0 12px;
+      color: var(--cyan);
+    }
+    .doc-section p {
+      font-size: 15px; color: var(--text-dim); margin-bottom: 16px;
+      line-height: 1.7;
+    }
+    .doc-section ul {
+      margin: 0 0 20px 20px; color: var(--text-dim); font-size: 14px;
+    }
+    .doc-section li { margin-bottom: 6px; }
+
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    pre code { color: var(--text); }
+
+    .options-table {
+      width: 100%; border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+    .options-table th {
+      text-align: left; padding: 10px 16px;
+      font-size: 12px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+    .options-table td {
+      padding: 10px 16px; font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .options-table td:first-child { color: var(--cyan); font-weight: 600; }
+
+    /* ── CTA ── */
+    .cta {
+      padding: 100px 0; text-align: center;
+      position: relative;
+    }
+    .cta::before {
+      content: '';
+      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(34, 197, 94, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta h2 {
+      font-size: clamp(28px, 4vw, 44px); font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 16px;
+    }
+    .cta p { color: var(--text-dim); font-size: 16px; margin-bottom: 32px; }
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #000; font-weight: 700;
+      padding: 14px 32px; border-radius: 10px; font-size: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(34, 197, 94, 0.3);
+      text-decoration: none;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+    footer .container {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    footer p { font-size: 13px; color: var(--text-dim); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text-dim); }
+
+    /* ── Interactive Terminal ── */
+    .playground-section {
+      padding: 20px 0 80px;
+    }
+    .playground-section h2 {
+      font-size: clamp(24px, 3vw, 32px); font-weight: 800; text-align: center;
+      margin-bottom: 8px; letter-spacing: -0.5px;
+    }
+    .playground-section .subtitle {
+      color: var(--text-dim); text-align: center; margin-bottom: 32px; font-size: 15px;
+    }
+    .playground-container { max-width: 800px; margin: 0 auto; position: relative; }
+
+    .play-terminal {
+      background: #08080d;
+      border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .play-titlebar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; background: #111118;
+      border-bottom: 1px solid var(--border); user-select: none;
+    }
+    .play-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .play-dot.red { background: #ff5f57; }
+    .play-dot.yellow { background: #febc2e; }
+    .play-dot.green { background: #28c840; }
+    .play-title {
+      flex: 1; text-align: center;
+      font-size: 12px; color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .play-body {
+      padding: 16px 20px; height: 400px; overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7;
+      scrollbar-width: thin; scrollbar-color: #222 transparent;
+    }
+    .play-body::-webkit-scrollbar { width: 6px; }
+    .play-body::-webkit-scrollbar-track { background: transparent; }
+    .play-body::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    .play-line { white-space: pre-wrap; word-break: break-all; }
+    .play-input-line { display: flex; align-items: center; }
+    .play-prompt { color: var(--accent); white-space: pre; user-select: none; }
+    .play-input {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      outline: none; caret-color: var(--accent);
+    }
+    .play-input::placeholder { color: #333; }
+
+    .p-green { color: #22c55e; }
+    .p-red { color: #ef4444; }
+    .p-yellow { color: #eab308; }
+    .p-blue { color: #3b82f6; }
+    .p-cyan { color: #06b6d4; }
+    .p-magenta { color: #a855f7; }
+    .p-dim { color: #555570; }
+    .p-bold { font-weight: 700; }
+    .p-orange { color: #f97316; }
+    .p-white { color: #e4e4ef; }
+
+    .quick-cmds {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-top: 16px; justify-content: center;
+    }
+    .quick-chip {
+      padding: 6px 14px; border-radius: 20px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+    }
+    .quick-chip:hover {
+      background: rgba(34,197,94,0.1); border-color: var(--accent-dim); color: var(--text);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .nav-links { gap: 16px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .hero-install { flex-direction: column; padding: 16px 20px; }
+      .play-body { height: 320px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <div class="nav-logo">
+      <span class="shield"><i data-lucide="shield-check" style="width:22px;height:22px;color:var(--accent);vertical-align:-4px;"></i></span> safenpm
+    </div>
+    <div class="nav-links">
+      <a href="#playground">Try It</a>
+      <a href="#features">Features</a>
+      <a href="#docs">Docs</a>
+      <a href="showcase.html">Showcase</a>
+      <a href="https://github.com/user/safenpm">GitHub</a>
+      <span class="nav-badge">v0.5.0</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <h1>
+      Stop supply-chain<br>
+      attacks <span class="gradient">before they run</span>
+    </h1>
+    <p>
+      Drop-in <code class="mono">npm install</code> replacement that sandboxes every postinstall script,
+      statically analyzes for threats, and scans your entire dependency tree.
+    </p>
+
+    <div class="hero-install mono" onclick="copyInstall()">
+      <span class="prompt">$</span>
+      <span class="cmd">npm install -g safenpm</span>
+      <button class="copy-btn" title="Copy">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+
+    <div class="hero-badges">
+      <span class="badge"><i data-lucide="package" style="width:14px;height:14px;color:var(--accent);"></i> Zero dependencies</span>
+      <span class="badge"><i data-lucide="laptop" style="width:14px;height:14px;color:var(--blue);"></i> macOS + Linux + Windows</span>
+      <span class="badge"><i data-lucide="bookmark" style="width:14px;height:14px;color:var(--yellow);"></i> MIT Licensed</span>
+    </div>
+  </div>
+</section>
+
+<!-- Terminal Demo -->
+<section class="terminal-section">
+  <div class="container">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot r"></div>
+        <div class="terminal-dot y"></div>
+        <div class="terminal-dot g"></div>
+        <span>~/my-project</span>
+      </div>
+      <div class="terminal-body mono">
+        <div class="line"><span class="t-prompt">$ </span><span class="t-cmd">safenpm install --scan</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-bold">  safenpm</span> <span class="t-dim">— sandboxed installs</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-dim">  sandbox: sandbox-exec (macOS)</span></div>
+        <div class="line"><span class="t-cyan">  &#x2192;</span> installing packages (scripts disabled)...</div>
+        <div class="line"></div>
+        <div class="line"><span class="t-cyan">  &#x2192;</span> static analysis of install scripts...</div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">evil-pkg@0.0.1</span> <span class="t-dim">risk: 90/100</span></div>
+        <div class="line">    <span class="t-red">HIGH  </span> downloads from external URL (curl/wget)</div>
+        <div class="line">    <span class="t-red">HIGH  </span> pipes output to shell execution</div>
+        <div class="line">    <span class="t-yellow">MEDIUM</span> reads sensitive home directory files</div>
+        <div class="line"></div>
+        <div class="line"><span class="t-cyan">  &#x2192;</span> typosquat detection...</div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-red">&#x26a0;</span> <span class="t-bold">expresss</span> &#x2192; looks like <span class="t-cyan">express</span></div>
+        <div class="line">    <span class="t-dim">technique: edit-distance-1  confidence: high</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-cyan">  &#x2192;</span> found 3 install scripts — running in sandbox...</div>
+        <div class="line"></div>
+        <div class="line"><span class="t-red">  &#x2717; blocked</span>  <span class="t-bold">evil-pkg@0.0.1</span></div>
+        <div class="line"><span class="t-dim">    hook:   postinstall</span></div>
+        <div class="line"><span class="t-dim">    reason: attempted network access during install</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-green">  &#x2713; clean</span>   bcrypt@5.1.0</div>
+        <div class="line"><span class="t-blue">  &#x21b3; allow</span>   sharp@0.33.0 <span class="t-dim">(allowlisted)</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-red">  <span class="t-bold">1 blocked</span></span><span class="t-red"> out of 3 install scripts</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Doctor Demo -->
+<section class="terminal-section" style="padding-top: 0;">
+  <div class="container">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot r"></div>
+        <div class="terminal-dot y"></div>
+        <div class="terminal-dot g"></div>
+        <span>~/my-project</span>
+      </div>
+      <div class="terminal-body mono">
+        <div class="line"><span class="t-prompt">$ </span><span class="t-cmd">safenpm doctor</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-bold">  safenpm</span> <span class="t-dim">— sandboxed installs</span></div>
+        <div class="line"></div>
+        <div class="line"><span class="t-cyan">  &#x2192;</span> running health check...</div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-green"><span class="t-bold">Grade: B+</span></span>  <span class="t-dim">(84/100)</span></div>
+        <div class="line">  <span class="t-dim">1 area could use attention, but no critical issues.</span></div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Lockfile</span> <span class="t-dim">92/100</span></div>
+        <div class="line">  <span class="t-green">  &#x2713;</span> Lockfile healthy (v3, 847 packages)</div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Install Scripts</span> <span class="t-dim">100/100</span></div>
+        <div class="line">  <span class="t-green">  &#x2713;</span> 2 install scripts, all low-risk</div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-yellow">!</span> <span class="t-bold">Typosquats</span> <span class="t-dim">60/100</span></div>
+        <div class="line">  <span class="t-yellow">  !</span> co1ors resembles colors (substitution)</div>
+        <div class="line">      <span class="t-cyan">fix:</span> <span class="t-dim">Run `safenpm fix` to replace with colors</span></div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Reputation</span> <span class="t-dim">78/100</span></div>
+        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Behavior</span> <span class="t-dim">100/100</span></div>
+        <div class="line">  <span class="t-green">&#x2713;</span> <span class="t-bold">Project Hygiene</span> <span class="t-dim">90/100</span></div>
+        <div class="line"></div>
+        <div class="line">  <span class="t-cyan">&#x2192;</span> 1 auto-fixable issue found</div>
+        <div class="line">  <span class="t-dim">run `safenpm fix` to apply, or `safenpm fix --dry-run` to preview</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Playground -->
+<section class="playground-section" id="playground">
+  <div class="container">
+    <h2>Try It Yourself</h2>
+    <p class="subtitle">A live terminal running safenpm's actual algorithms in your browser. Type any command or click a quick demo below.</p>
+
+    <div class="playground-container">
+      <div class="play-terminal">
+        <div class="play-titlebar">
+          <div class="play-dot red"></div>
+          <div class="play-dot yellow"></div>
+          <div class="play-dot green"></div>
+          <div class="play-title">safenpm v0.5.0 — interactive playground</div>
+        </div>
+        <div class="play-body" id="playBody">
+          <div class="play-line"><span class="p-green p-bold">safenpm v0.5.0</span> <span class="p-dim">— interactive playground</span></div>
+          <div class="play-line"><span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> to see available commands, or click a quick command below.</span></div>
+          <div class="play-line">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-cmds">
+      <button class="quick-chip" data-cmd="help">help</button>
+      <button class="quick-chip" data-cmd="safenpm check axois">check axois</button>
+      <button class="quick-chip" data-cmd="safenpm check @evil/lodash">check @evil/lodash</button>
+      <button class="quick-chip" data-cmd="safenpm scan react">scan react</button>
+      <button class="quick-chip" data-cmd="safenpm doctor">doctor</button>
+      <button class="quick-chip" data-cmd="safenpm install express">install express</button>
+      <button class="quick-chip" data-cmd="safenpm diff lodash">diff lodash</button>
+      <button class="quick-chip" data-cmd="clear">clear</button>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">Features</div>
+    <div class="section-title">Defense in depth for your dependencies</div>
+    <div class="section-desc">
+      safenpm layers multiple security checks — sandbox enforcement, static analysis,
+      and deep intelligence scanning — to catch threats that any single tool would miss.
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="shield"></i></div>
+        <h3>Sandbox Enforcement</h3>
+        <p>Every postinstall script runs inside an OS-level sandbox with no network access. Malicious packages can't phone home, exfiltrate tokens, or download payloads.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="search"></i></div>
+        <h3>Static Analysis</h3>
+        <p>19 detection rules scan scripts before execution. Catches curl/wget piping, DNS exfil, env stealing, base64 obfuscation, and SSH key access with severity-weighted scoring.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--red);"><i data-lucide="alert-triangle"></i></div>
+        <h3>Typosquat Detection</h3>
+        <p>Levenshtein distance plus 5 attack pattern detectors (char-swap, substitution, scope confusion) check every dependency against 80+ popular npm packages.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--blue);"><i data-lucide="git-branch"></i></div>
+        <h3>Behavioral Diffing</h3>
+        <p>Caches install scripts per project. On upgrade, compares against the cached version to surface new threats, new warnings, and risk score changes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(234, 179, 8, 0.1); color: var(--yellow);"><i data-lucide="users"></i></div>
+        <h3>Maintainer Change Detection</h3>
+        <p>Queries the npm registry for publisher history. Alerts you when the person publishing a package changes between versions — a signal of account takeover.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="file-lock"></i></div>
+        <h3>Lockfile Integrity Audit</h3>
+        <p>Parses package-lock.json to catch git dependencies, custom registries, missing integrity hashes, weak algorithms, and stale lockfiles.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(6, 182, 212, 0.1); color: var(--cyan);"><i data-lucide="star"></i></div>
+        <h3>Reputation Scoring</h3>
+        <p>Scores every package 0-100 based on maintainer count, license, repository presence, dependency weight, and maturity. Aggregates into a project health grade.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--magenta);"><i data-lucide="globe"></i></div>
+        <h3>Community Threat Intel</h3>
+        <p>Checks packages against the safenpm threat intelligence network. Flagged packages are surfaced with report counts and top reasons.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--blue);"><i data-lucide="terminal"></i></div>
+        <h3>CI/CD Ready</h3>
+        <p>Full JSON output mode, non-zero exit codes on blocks, audit log with auto-rotation, and a standalone scan command for pipeline integration.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(6, 182, 212, 0.1); color: var(--cyan);"><i data-lucide="activity"></i></div>
+        <h3>Doctor Health Report</h3>
+        <p>Single command gives your project a letter grade (A+ to F) with weighted scores across 6 categories. Every finding comes with an actionable fix suggestion.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--red);"><i data-lucide="wrench"></i></div>
+        <h3>One-Click Auto-Fix</h3>
+        <p>Detected a typosquat? safenpm fix automatically removes the suspect and installs the legitimate package. Preview with --dry-run before applying.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--magenta);"><i data-lucide="file-text"></i></div>
+        <h3>Package Diff Viewer</h3>
+        <p>Git-diff-style output showing exactly what changed in each dependency update — script modifications, added/removed deps, and new files. Snapshot and compare.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Platforms -->
+<section class="platforms" id="platforms">
+  <div class="container">
+    <div class="section-label">Platforms</div>
+    <div class="section-title">Works where you work</div>
+    <div class="section-desc">
+      Native sandbox backends for every major OS. No Docker required.
+    </div>
+
+    <table class="platform-table">
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th>Backend</th>
+          <th>Network Block</th>
+          <th>FS Sandboxing</th>
+          <th>Requires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>macOS</strong></td>
+          <td><code class="mono">sandbox-exec</code></td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td>Built-in</td>
+        </tr>
+        <tr>
+          <td><strong>Linux</strong></td>
+          <td><code class="mono">firejail</code></td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td><code class="mono">apt install firejail</code></td>
+        </tr>
+        <tr>
+          <td><strong>Windows</strong> (admin)</td>
+          <td>Firewall + ACLs</td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td>Run as Administrator</td>
+        </tr>
+        <tr>
+          <td><strong>Windows</strong> (WSL)</td>
+          <td><code class="mono">firejail</code> via WSL</td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td><span class="check"><i data-lucide="check" style="width:16px;height:16px;"></i></span></td>
+          <td>WSL + firejail</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Docs -->
+<section class="docs" id="docs">
+  <div class="container">
+    <div class="section-label">Documentation</div>
+    <div class="section-title">Get started in 60 seconds</div>
+
+    <div class="docs-nav">
+      <button class="active" onclick="showDoc('quickstart')">Quick Start</button>
+      <button onclick="showDoc('options')">Options</button>
+      <button onclick="showDoc('scan')">Deep Scan</button>
+      <button onclick="showDoc('allowlist')">Allowlisting</button>
+      <button onclick="showDoc('ci')">CI/CD</button>
+      <button onclick="showDoc('analysis')">Static Analysis</button>
+      <button onclick="showDoc('doctor')">Doctor</button>
+      <button onclick="showDoc('autofix')">Auto-Fix</button>
+      <button onclick="showDoc('diff')">Diff Viewer</button>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="doc-section active" id="doc-quickstart">
+      <h3>Quick Start</h3>
+      <p>Install safenpm globally and use it as a drop-in replacement for <code class="mono">npm install</code>.</p>
+
+      <h4>Install</h4>
+      <pre><code>npm install -g safenpm</code></pre>
+
+      <h4>Basic usage</h4>
+      <pre><code><span class="t-dim"># Instead of npm install:</span>
+safenpm install
+
+<span class="t-dim"># Install specific packages:</span>
+safenpm install axios lodash express
+
+<span class="t-dim"># Short form:</span>
+safenpm i</code></pre>
+
+      <h4>What happens</h4>
+      <p>
+        safenpm runs <code class="mono">npm install --ignore-scripts</code> first to install packages normally,
+        then discovers all postinstall/preinstall/install hooks and runs each one inside an OS-native sandbox.
+        If a script tries to access the network or read sensitive files, it gets blocked and reported.
+      </p>
+
+      <h4>Preview before running</h4>
+      <pre><code>safenpm i --dry-run</code></pre>
+    </div>
+
+    <!-- Options -->
+    <div class="doc-section" id="doc-options">
+      <h3>Command Line Options</h3>
+
+      <table class="options-table">
+        <thead>
+          <tr><th>Flag</th><th>Short</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">--dry-run</td><td class="mono">-n</td><td>Preview what would be sandboxed without executing</td></tr>
+          <tr><td class="mono">--allow &lt;pkg,...&gt;</td><td></td><td>Skip sandboxing for trusted packages</td></tr>
+          <tr><td class="mono">--scan</td><td class="mono">-S</td><td>Enable deep scan (typosquat, diffing, intel, lockfile, reputation)</td></tr>
+          <tr><td class="mono">--json</td><td></td><td>Machine-readable JSON output for CI pipelines</td></tr>
+          <tr><td class="mono">--interactive</td><td class="mono">-I</td><td>Prompt on each blocked package: retry / skip / abort</td></tr>
+          <tr><td class="mono">--loose</td><td></td><td>Network-only sandbox (no filesystem restrictions)</td></tr>
+          <tr><td class="mono">--no-report</td><td></td><td>Disable anonymous signal reporting</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Commands</h4>
+      <table class="options-table">
+        <thead>
+          <tr><th>Command</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">install / i</td><td>Install packages with sandboxing</td></tr>
+          <tr><td class="mono">doctor</td><td>Health report card with letter grade and fixes</td></tr>
+          <tr><td class="mono">fix</td><td>Auto-fix typosquats and remove malicious packages</td></tr>
+          <tr><td class="mono">diff</td><td>Show what changed in dependencies since snapshot</td></tr>
+          <tr><td class="mono">scan</td><td>Standalone deep scan (no install)</td></tr>
+          <tr><td class="mono">audit</td><td>View recent safenpm run history</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Deep Scan -->
+    <div class="doc-section" id="doc-scan">
+      <h3>Deep Scan</h3>
+      <p>
+        The <code class="mono">--scan</code> flag activates all six intelligence modules for a comprehensive
+        security audit of your dependency tree.
+      </p>
+
+      <pre><code><span class="t-dim"># During install:</span>
+safenpm install --scan
+
+<span class="t-dim"># Standalone (no install, analysis only):</span>
+safenpm scan
+
+<span class="t-dim"># JSON output for CI:</span>
+safenpm scan --json</code></pre>
+
+      <h4>What gets checked</h4>
+      <p>
+        <strong>Typosquat detection</strong> checks every package name against 80+ popular npm packages using
+        Levenshtein distance and 5 attack pattern detectors including char-swap, substitution (0&#x2192;o, rn&#x2192;m),
+        scope confusion, and edit distance analysis.
+      </p>
+      <p>
+        <strong>Behavioral diffing</strong> compares install scripts against a cached baseline from your last install.
+        If a package upgrade introduces new curl calls, DNS lookups, or other suspicious patterns, you'll see
+        the exact new warnings and risk delta.
+      </p>
+      <p>
+        <strong>Maintainer change detection</strong> queries the npm registry for the publisher of each version.
+        If the account publishing the current version differs from who published the previous one, that's flagged
+        as a potential account takeover.
+      </p>
+      <p>
+        <strong>Lockfile integrity audit</strong> parses package-lock.json and checks for git dependencies,
+        custom registries, missing integrity hashes, weak hash algorithms, and stale lockfiles.
+      </p>
+      <p>
+        <strong>Reputation scoring</strong> evaluates every package based on maintainer count, license,
+        repository presence, dependency weight, install scripts, and version maturity, producing a 0-100 score
+        and a project-level health grade.
+      </p>
+      <p>
+        <strong>Community threat intel</strong> checks packages against the safenpm intelligence network,
+        surfacing flagged packages with report counts and attack categories.
+      </p>
+    </div>
+
+    <!-- Allowlisting -->
+    <div class="doc-section" id="doc-allowlist">
+      <h3>Allowlisting</h3>
+      <p>Some packages (like bcrypt, sharp, or node-gyp native modules) legitimately need install scripts. Allowlist them to skip sandboxing.</p>
+
+      <h4>CLI flag</h4>
+      <pre><code>safenpm i --allow bcrypt,sharp,@img/sharp-darwin-arm64</code></pre>
+
+      <h4>Project config (.safenpmrc)</h4>
+      <pre><code><span class="t-dim"># .safenpmrc in project root</span>
+bcrypt
+sharp
+@img/*
+@mycompany/*</code></pre>
+
+      <h4>Global config</h4>
+      <pre><code><span class="t-dim"># ~/.safenpmrc</span>
+bcrypt
+node-gyp</code></pre>
+
+      <p>
+        Allowlisted packages still run, but outside the sandbox. The allowlist is loaded from three sources
+        (CLI flags, project <code class="mono">.safenpmrc</code>, home <code class="mono">~/.safenpmrc</code>)
+        and merged. Scope wildcards (<code class="mono">@scope/*</code>) match all packages in that scope.
+      </p>
+    </div>
+
+    <!-- CI/CD -->
+    <div class="doc-section" id="doc-ci">
+      <h3>CI/CD Integration</h3>
+
+      <h4>GitHub Actions</h4>
+      <pre><code>- name: Install with safenpm
+  run: |
+    npm install -g safenpm
+    safenpm install --json --scan --no-report | tee safenpm-report.json
+
+- name: Check for blocks
+  run: |
+    BLOCKED=$(cat safenpm-report.json | jq '.summary.blocked')
+    TYPOS=$(cat safenpm-report.json | jq '.summary.typosquats')
+    if [ "$BLOCKED" -gt 0 ] || [ "$TYPOS" -gt 0 ]; then
+      echo "::error::safenpm found $BLOCKED blocked scripts and $TYPOS typosquat suspects"
+      exit 1
+    fi</code></pre>
+
+      <h4>JSON output structure</h4>
+      <pre><code>{
+  "version": "0.5.0",
+  "backend": "sandbox-exec (macOS)",
+  "packages": [...],
+  "typosquats": [...],
+  "lockfileAudit": { "score": 85, "issues": [...] },
+  "reputationSummary": { "overallScore": 72, ... },
+  "summary": {
+    "total": 5, "blocked": 1, "clean": 3,
+    "allowed": 1, "warnings": 8,
+    "typosquats": 0, "maintainerChanges": 0,
+    "lockfileIssues": 2, "reputationScore": 72
+  }
+}</code></pre>
+
+      <h4>Doctor as CI gate</h4>
+      <pre><code><span class="t-dim"># Fail the build if project health is D or F:</span>
+safenpm doctor --json
+<span class="t-dim"># (exits non-zero on score &lt; 60)</span></code></pre>
+
+      <h4>Standalone scan (no install)</h4>
+      <pre><code><span class="t-dim"># Just scan existing node_modules:</span>
+safenpm scan --json</code></pre>
+
+      <h4>Audit log</h4>
+      <p>
+        Every run is logged to <code class="mono">~/.safenpm/audit.log</code> in JSONL format with auto-rotation
+        at 5MB. Query it with <code class="mono">safenpm audit</code> or <code class="mono">safenpm audit --json</code>.
+      </p>
+    </div>
+
+    <!-- Static Analysis -->
+    <div class="doc-section" id="doc-analysis">
+      <h3>Static Analysis Rules</h3>
+      <p>safenpm's analyzer runs 19 rules across 3 severity tiers before scripts are sandboxed. Each rule has a weight; the total is capped at 100.</p>
+
+      <h4>High severity (weight: 30)</h4>
+      <p>
+        curl/wget downloads, netcat, require('https'), fetch(), require('dns'),
+        process.env access, ~/.ssh access, sensitive dotfile reads (.aws, .npmrc, .docker, .kube),
+        eval(), base64 encoding/decoding, pipe-to-shell execution.
+      </p>
+
+      <h4>Medium severity (weight: 15)</h4>
+      <p>
+        /etc/passwd reads, $HOME access, child_process spawning, hex/unicode
+        obfuscation, net/dgram socket creation.
+      </p>
+
+      <h4>Low severity (weight: 5)</h4>
+      <p>
+        node-gyp native builds, prebuild-install, node-pre-gyp.
+        These are common in legitimate packages.
+      </p>
+
+      <h4>Risk levels</h4>
+      <p>
+        Scores map to levels: <strong style="color: var(--red)">critical</strong> (60+),
+        <strong style="color: var(--yellow)">suspicious</strong> (30-59),
+        <strong style="color: var(--blue)">low</strong> (1-29),
+        <strong style="color: var(--accent)">clean</strong> (0).
+      </p>
+    </div>
+
+    <!-- Doctor -->
+    <div class="doc-section" id="doc-doctor">
+      <h3>Doctor — Project Health Report</h3>
+      <p>
+        <code class="mono">safenpm doctor</code> runs every analysis module and produces a letter grade
+        from A+ to F, with weighted scores across 6 categories.
+      </p>
+
+      <pre><code><span class="t-dim"># Run a health check:</span>
+safenpm doctor
+
+<span class="t-dim"># JSON output for CI gates:</span>
+safenpm doctor --json</code></pre>
+
+      <h4>What gets graded</h4>
+      <p>
+        <strong>Lockfile</strong> (20% weight) — checks for missing lockfile, git/file dependencies,
+        missing integrity hashes, weak algorithms, and staleness.
+      </p>
+      <p>
+        <strong>Install Scripts</strong> (25% weight) — static analysis of all postinstall hooks.
+        Critical-risk scripts heavily penalize the score.
+      </p>
+      <p>
+        <strong>Typosquats</strong> (20% weight) — scans every package name. A single high-confidence
+        typosquat drops this section to 10/100.
+      </p>
+      <p>
+        <strong>Reputation</strong> (15% weight) — aggregate reputation score from all packages.
+        Low-reputation packages (missing license, no repo, single maintainer) drag this down.
+      </p>
+      <p>
+        <strong>Behavior</strong> (10% weight) — compares install scripts against cached baselines.
+        Significant risk increases are flagged.
+      </p>
+      <p>
+        <strong>Project Hygiene</strong> (10% weight) — checks for .safenpmrc, engines field,
+        wildcard version ranges, and package.json health.
+      </p>
+
+      <h4>Grade scale</h4>
+      <p>
+        A+ (97+), A (93+), A- (90+), B+ (87+), B (83+), B- (80+),
+        C+ (77+), C (73+), C- (70+), D (60+), F (below 60).
+        Doctor exits non-zero on D or F for CI gating.
+      </p>
+
+      <h4>Actionable fixes</h4>
+      <p>
+        Every finding includes a <code class="mono">fix:</code> suggestion — specific commands to run,
+        config changes to make, or packages to replace. If auto-fixable issues are found, doctor
+        prompts you to run <code class="mono">safenpm fix</code>.
+      </p>
+    </div>
+
+    <!-- Auto-fix -->
+    <div class="doc-section" id="doc-autofix">
+      <h3>Auto-Fix</h3>
+      <p>
+        <code class="mono">safenpm fix</code> scans for fixable issues and applies corrections automatically.
+      </p>
+
+      <pre><code><span class="t-dim"># Preview what would be fixed:</span>
+safenpm fix --dry-run
+
+<span class="t-dim"># Apply all fixes:</span>
+safenpm fix
+
+<span class="t-dim"># JSON output:</span>
+safenpm fix --json</code></pre>
+
+      <h4>What gets fixed</h4>
+      <p>
+        <strong>Typosquat replacement</strong> — high and medium confidence typosquats are automatically
+        removed and replaced with the legitimate package. For example, <code class="mono">axois</code>
+        gets uninstalled and <code class="mono">axios</code> gets installed in its place.
+      </p>
+      <p>
+        <strong>Malicious package removal</strong> — packages that were blocked during
+        <code class="mono">safenpm install</code> (network or filesystem violations) can be
+        removed from node_modules and package.json in one step.
+      </p>
+
+      <h4>How it works</h4>
+      <p>
+        Fix uses <code class="mono">npm uninstall</code> to cleanly remove packages, then
+        <code class="mono">npm install --ignore-scripts</code> for replacements. If npm uninstall
+        fails (corrupted state), it falls back to manual cleanup: deleting the directory from
+        node_modules and stripping the entry from all dependency fields in package.json.
+      </p>
+    </div>
+
+    <!-- Diff Viewer -->
+    <div class="doc-section" id="doc-diff">
+      <h3>Package Diff Viewer</h3>
+      <p>
+        <code class="mono">safenpm diff</code> shows exactly what changed in your dependencies
+        since the last time you took a snapshot — like git diff for your node_modules.
+      </p>
+
+      <pre><code><span class="t-dim"># Save current state as baseline:</span>
+safenpm diff --snapshot
+
+<span class="t-dim"># After updating packages, see what changed:</span>
+npm update
+safenpm diff
+
+<span class="t-dim"># JSON output:</span>
+safenpm diff --json</code></pre>
+
+      <h4>What gets compared</h4>
+      <p>
+        <strong>Install script changes</strong> — line-level diffs of postinstall/preinstall hooks
+        with red/green coloring. Shows when scripts are added, removed, or modified between versions.
+      </p>
+      <p>
+        <strong>Dependency changes</strong> — new dependencies added, old ones removed, and version
+        range changes within each package.
+      </p>
+      <p>
+        <strong>File changes</strong> — new files added or removed from the package directory.
+        Catches when a package ships unexpected new binaries or scripts.
+      </p>
+
+      <h4>Workflow</h4>
+      <p>
+        Run <code class="mono">safenpm diff --snapshot</code> after a clean install to establish
+        your baseline. Then after any <code class="mono">npm update</code> or version bump, run
+        <code class="mono">safenpm diff</code> to review changes before deploying. Integrate into
+        CI by checking the JSON output for unexpected script modifications.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container">
+    <h2>Secure your installs today</h2>
+    <p>One command. Zero configuration. Full protection.</p>
+    <a href="#" class="cta-btn" onclick="copyInstall(); return false;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+      npm install -g safenpm
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p>safenpm v0.5.0 &middot; MIT License</p>
+    <div class="footer-links">
+      <a href="https://github.com/user/safenpm">GitHub</a>
+      <a href="https://www.npmjs.com/package/safenpm">npm</a>
+      <a href="#docs">Docs</a>
+      <a href="showcase.html">Showcase</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+function copyInstall() {
+  navigator.clipboard.writeText('npm install -g safenpm').then(() => {
+    const btn = document.querySelector('.copy-btn');
+    if (btn) {
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      }, 2000);
+    }
+  });
+}
+
+function showDoc(id) {
+  document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.docs-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('doc-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Initialize Lucide icons
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+// Also try immediately in case DOM is already ready
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+<script>
+// ═══════════════════════════════════════════
+// Interactive Terminal Engine
+// ═══════════════════════════════════════════
+(function() {
+  const body = document.getElementById('playBody');
+  const cmdHistory = [];
+  let histIdx = -1;
+
+  // Package DB for scan/install/diff
+  const PKG_DATA = {
+    react:      { v: '18.3.1', score: 95, tier: 'trusted', dl: '28M/week', scripts: false, deps: 3, maint: '5+', license: 'MIT' },
+    typescript: { v: '5.4.5',  score: 95, tier: 'trusted', dl: '22M/week', scripts: false, deps: 0, maint: '5+', license: 'Apache-2.0' },
+    lodash:     { v: '4.17.21',score: 80, tier: 'trusted', dl: '18M/week', scripts: false, deps: 0, maint: '3',  license: 'MIT' },
+    next:       { v: '14.2.3', score: 80, tier: 'trusted', dl: '7M/week',  scripts: true,  deps: 22, maint: '5+', license: 'MIT' },
+    express:    { v: '4.19.2', score: 75, tier: 'established', dl: '14M/week', scripts: false, deps: 30, maint: '3', license: 'MIT' },
+    axios:      { v: '1.7.2',  score: 75, tier: 'established', dl: '12M/week', scripts: false, deps: 5, maint: '2', license: 'MIT' },
+    webpack:    { v: '5.91.0', score: 75, tier: 'established', dl: '10M/week', scripts: false, deps: 25, maint: '5+', license: 'MIT' },
+    eslint:     { v: '9.3.0',  score: 75, tier: 'established', dl: '11M/week', scripts: false, deps: 35, maint: '5+', license: 'MIT' },
+    bcrypt:     { v: '5.1.1',  score: 50, tier: 'emerging', dl: '1.2M/week', scripts: true, deps: 4, maint: '1', license: 'MIT' },
+    sharp:      { v: '0.33.4', score: 40, tier: 'emerging', dl: '3.5M/week', scripts: true, deps: 8, maint: '1', license: 'Apache-2.0' },
+  };
+
+  // Typosquat detection (ported from src/typosquat.ts)
+  const POPULAR = [
+    'lodash','react','express','axios','chalk','commander','debug','dotenv',
+    'moment','uuid','webpack','typescript','eslint','prettier','jest','mocha',
+    'chai','underscore','async','bluebird','request','glob','minimist','yargs',
+    'inquirer','ora','semver','mkdirp','rimraf','fs-extra','colors','cheerio',
+    'puppeteer','mongoose','sequelize','pg','mysql2','redis','jsonwebtoken',
+    'bcrypt','cors','body-parser','cookie-parser','helmet','morgan','passport',
+    'nodemailer','socket.io','ws','sharp','jimp','node-fetch','cross-env',
+    'concurrently','nodemon','pm2','next','nuxt','vue','angular','svelte',
+    'esbuild','vite','rollup','babel-core','core-js','regenerator-runtime',
+    'tslib','rxjs','graphql','apollo-server','fastify','koa','electron',
+    'prisma','tailwindcss','postcss','autoprefixer',
+  ];
+
+  function lev(a, b) {
+    const m=a.length, n=b.length, d=Array.from({length:m+1},()=>Array(n+1).fill(0));
+    for(let i=0;i<=m;i++)d[i][0]=i; for(let j=0;j<=n;j++)d[0][j]=j;
+    for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+      d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);
+    return d[m][n];
+  }
+  function isTransp(s,t){if(s.length!==t.length)return false;const d=[];for(let i=0;i<s.length;i++)if(s[i]!==t[i])d.push(i);return d.length===2&&s[d[0]]===t[d[1]]&&s[d[1]]===t[d[0]];}
+  function hasSub(s,t){const p=[['0','o'],['1','l'],['1','i'],['rn','m'],['vv','w'],['-',''],['_','-'],['.','-']];for(const[f,r]of p){if(s.replace(f,r)===t||t.replace(f,r)===s)return true;}return false;}
+  function stripScope(n){return n.startsWith('@')?(n.split('/')[1]||n):n;}
+
+  function checkTypo(name) {
+    const s = stripScope(name);
+    for (const t of POPULAR) {
+      if(name===t||s===t){if(name!==t&&s===t)return{suspect:name,target:t,dist:0,tech:'scope-confusion',conf:'high'};continue;}
+      const d=lev(s,t);
+      if(isTransp(s,t))return{suspect:name,target:t,dist:d,tech:'char-swap',conf:'high'};
+      if(hasSub(s,t))return{suspect:name,target:t,dist:d,tech:'substitution',conf:'high'};
+      if(d===1&&s.length>=3)return{suspect:name,target:t,dist:1,tech:'edit-distance-1',conf:s.length<=6?'high':'medium'};
+      if(d===2&&s.length>=8)return{suspect:name,target:t,dist:2,tech:'edit-distance-2',conf:'low'};
+      if(s.length>t.length&&s.includes(t)&&s.length-t.length<=4)return{suspect:name,target:t,dist:d,tech:'name-extension',conf:'low'};
+    }
+    return null;
+  }
+
+  function ln(html) { const d=document.createElement('div'); d.className='play-line'; d.innerHTML=html||'&nbsp;'; body.appendChild(d); }
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function scrollEnd() { body.scrollTop = body.scrollHeight; }
+
+  function typeLines(lines, cb) {
+    let i=0;
+    (function next(){ if(i<lines.length){ln(lines[i]);scrollEnd();i++;setTimeout(next,lines[i-1]==='&nbsp;'?30:40+Math.random()*60);}else if(cb)cb(); })();
+  }
+
+  function prompt() {
+    const wrap = document.createElement('div');
+    wrap.className = 'play-input-line';
+    wrap.innerHTML = '<span class="play-prompt">$ </span>';
+    const inp = document.createElement('input');
+    inp.type='text'; inp.className='play-input'; inp.placeholder='Type a command...';
+    inp.setAttribute('autocomplete','off'); inp.setAttribute('spellcheck','false');
+    wrap.appendChild(inp); body.appendChild(wrap); inp.focus(); scrollEnd();
+
+    inp.addEventListener('keydown', function(e) {
+      if(e.key==='Enter'){e.preventDefault();const c=inp.value.trim();inp.disabled=true;wrap.innerHTML='<span class="play-prompt">$ </span><span class="p-white">'+esc(c)+'</span>';if(c){cmdHistory.push(c);histIdx=cmdHistory.length;}if(c)exec(c);else prompt();}
+      else if(e.key==='ArrowUp'){e.preventDefault();if(histIdx>0){histIdx--;inp.value=cmdHistory[histIdx];}}
+      else if(e.key==='ArrowDown'){e.preventDefault();if(histIdx<cmdHistory.length-1){histIdx++;inp.value=cmdHistory[histIdx];}else{histIdx=cmdHistory.length;inp.value='';}}
+      else if(e.key==='Tab'){e.preventDefault();const v=inp.value,parts=v.split(' ');
+        if(parts.length<=1){const m=['safenpm','help','clear'].filter(c=>c.startsWith(v));if(m.length===1)inp.value=m[0];}
+        else if(parts[0]==='safenpm'&&parts.length===2){const m=['check','scan','install','doctor','diff','fix'].filter(s=>s.startsWith(parts[1]));if(m.length===1)inp.value='safenpm '+m[0];}
+        else if(parts[0]==='safenpm'&&parts.length===3){const pkgs=Object.keys(PKG_DATA).filter(p=>p.startsWith(parts[2]));if(pkgs.length===1)inp.value='safenpm '+parts[1]+' '+pkgs[0];}
+      }
+      else if(e.key==='l'&&e.ctrlKey){e.preventDefault();clearTerm();}
+    });
+  }
+
+  function clearTerm() {
+    body.innerHTML='';
+    ln('<span class="p-green p-bold">safenpm v0.5.0</span> <span class="p-dim">— interactive playground</span>');
+    ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> to see available commands.</span>');
+    ln(''); prompt();
+  }
+
+  // Command router
+  function exec(raw) {
+    const parts=raw.split(/\s+/), cmd=parts[0];
+    if(cmd==='help')return cmdHelp();
+    if(cmd==='clear')return clearTerm();
+    if(cmd==='safenpm'||cmd==='snpm'){
+      const sub=parts[1],arg=parts.slice(2).join(' ');
+      if(sub==='check')return cmdCheck(arg);
+      if(sub==='scan')return cmdScan(arg);
+      if(sub==='install')return cmdInstall(arg);
+      if(sub==='doctor')return cmdDoctor();
+      if(sub==='diff')return cmdDiff(arg);
+      if(sub==='fix')return cmdFix(arg);
+      if(sub==='--version'||sub==='-v'){ln('<span class="p-green">0.5.0</span>');ln('');prompt();return;}
+      if(!sub){ln('<span class="p-dim">Usage: safenpm &lt;command&gt; [args]. Type </span><span class="p-cyan">help</span><span class="p-dim"> for commands.</span>');ln('');prompt();return;}
+      ln('<span class="p-red">Unknown command:</span> safenpm '+esc(sub));ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> for available commands.</span>');ln('');prompt();return;
+    }
+    ln('<span class="p-red">Command not found:</span> '+esc(cmd));ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> for commands.</span>');ln('');prompt();
+  }
+
+  function cmdHelp() {
+    const l = [
+      '<span class="p-green p-bold">safenpm</span> <span class="p-dim">— sandboxed npm installs</span>','',
+      '<span class="p-bold">Available commands:</span>','',
+      '  <span class="p-cyan">safenpm check</span> <span class="p-dim">&lt;pkg&gt;</span>     Typosquat detection',
+      '  <span class="p-cyan">safenpm scan</span> <span class="p-dim">&lt;pkg&gt;</span>      Reputation score',
+      '  <span class="p-cyan">safenpm install</span> <span class="p-dim">&lt;pkg&gt;</span>   Simulated sandboxed install',
+      '  <span class="p-cyan">safenpm doctor</span>            Project health report',
+      '  <span class="p-cyan">safenpm diff</span> <span class="p-dim">&lt;pkg&gt;</span>      Package diff viewer',
+      '  <span class="p-cyan">safenpm fix</span> <span class="p-dim">&lt;pkg&gt;</span>       Auto-fix typosquats',
+      '  <span class="p-cyan">help</span>                      This message',
+      '  <span class="p-cyan">clear</span>                     Clear terminal','',
+      '<span class="p-dim">Tip: ↑/↓ for history, Tab to autocomplete, Ctrl+L to clear.</span>','',
+    ];
+    typeLines(l, prompt);
+  }
+
+  function cmdCheck(name) {
+    if(!name){ln('<span class="p-red">Usage:</span> safenpm check &lt;package-name&gt;');ln('');prompt();return;}
+    const r=checkTypo(name), techMap={'char-swap':'Character transposition','substitution':'Character substitution','edit-distance-1':'Edit distance 1 (very close)','edit-distance-2':'Edit distance 2','name-extension':'Name extension attack','scope-confusion':'Scope confusion attack'};
+    const l=['<span class="p-dim">Checking against '+POPULAR.length+' popular packages...</span>',''];
+    if(r){
+      const cc=r.conf==='high'?'p-red':r.conf==='medium'?'p-yellow':'p-orange';
+      l.push('<span class="p-red p-bold">⚠ TYPOSQUAT DETECTED</span>','',
+        '  <span class="p-dim">Package:</span>   <span class="p-red">'+esc(r.suspect)+'</span>',
+        '  <span class="p-dim">Target:</span>    <span class="p-yellow">'+esc(r.target)+'</span> <span class="p-dim">(did you mean this?)</span>',
+        '  <span class="p-dim">Attack:</span>    '+(techMap[r.tech]||r.tech),
+        '  <span class="p-dim">Distance:</span>  '+r.dist,
+        '  <span class="p-dim">Risk:</span>      <span class="'+cc+'">'+r.conf+' confidence</span>','',
+        '  <span class="p-green">→ Suggestion: install</span> <span class="p-green p-bold">'+esc(r.target)+'</span> <span class="p-green">instead</span>');
+    } else {
+      l.push('<span class="p-green p-bold">✓ No typosquat detected</span>','');
+      if(POPULAR.includes(name)) l.push('  <span class="p-dim">'+esc(name)+' is a known popular package on the watchlist.</span>');
+      else l.push('  <span class="p-dim">No match against '+POPULAR.length+' popular packages.</span>','  <span class="p-dim">Run</span> <span class="p-yellow">safenpm install '+esc(name)+'</span> <span class="p-dim">for full analysis.</span>');
+    }
+    l.push(''); typeLines(l, prompt);
+  }
+
+  function cmdScan(name) {
+    if(!name){ln('<span class="p-red">Usage:</span> safenpm scan &lt;package-name&gt;');ln('');prompt();return;}
+    const p=PKG_DATA[name], l=['<span class="p-dim">Scanning '+esc(name)+'...</span>',''];
+    if(p){
+      const tc=p.tier==='trusted'?'p-green':p.tier==='established'?'p-blue':'p-yellow';
+      const bl=20, fl=Math.round(p.score/100*bl);
+      const bar='<span class="'+tc+'">'+'█'.repeat(fl)+'</span><span class="p-dim">'+'░'.repeat(bl-fl)+'</span>';
+      l.push('  <span class="p-bold">'+esc(name)+'</span> <span class="p-dim">@'+p.v+'</span>  <span class="p-dim">'+p.dl+'</span>','',
+        '  <span class="p-dim">Score:</span>       '+bar+' <span class="'+tc+' p-bold">'+p.score+'/100</span>',
+        '  <span class="p-dim">Tier:</span>        <span class="'+tc+' p-bold">'+p.tier.toUpperCase()+'</span>',
+        '  <span class="p-dim">Maintainers:</span> '+p.maint,
+        '  <span class="p-dim">Dependencies:</span> '+p.deps,
+        '  <span class="p-dim">License:</span>     '+p.license,
+        '  <span class="p-dim">Scripts:</span>     '+(p.scripts?'<span class="p-yellow">has install scripts</span>':'<span class="p-green">none</span>'));
+    } else {
+      const fs=30+Math.floor(Math.random()*30), bl=20, fl=Math.round(fs/100*bl);
+      const bar='<span class="p-yellow">'+'█'.repeat(fl)+'</span><span class="p-dim">'+'░'.repeat(bl-fl)+'</span>';
+      l.push('  <span class="p-bold">'+esc(name)+'</span> <span class="p-dim">(not in demo database)</span>','',
+        '  <span class="p-dim">Score:</span>  '+bar+' <span class="p-yellow">'+fs+'/100</span>',
+        '  <span class="p-dim">Tier:</span>   <span class="p-yellow">UNKNOWN</span>','',
+        '  <span class="p-dim">Install safenpm to get real scores:</span> <span class="p-cyan">npm i -g safenpm</span>');
+    }
+    l.push(''); typeLines(l, prompt);
+  }
+
+  function cmdInstall(name) {
+    if(!name){ln('<span class="p-red">Usage:</span> safenpm install &lt;package-name&gt;');ln('');prompt();return;}
+    const typo=checkTypo(name), p=PKG_DATA[name], l=[];
+    l.push('<span class="p-green p-bold">safenpm</span> <span class="p-dim">v0.5.0</span>','','<span class="p-dim">⏳ Phase 1: Pre-install scan...</span>');
+    if(typo){
+      l.push('  <span class="p-red">⚠ Typosquat:</span> <span class="p-red">'+esc(typo.suspect)+'</span> → <span class="p-yellow">'+esc(typo.target)+'</span> <span class="p-dim">('+typo.tech+')</span>',
+        '  <span class="p-red p-bold">✗ INSTALL BLOCKED</span>','',
+        '  <span class="p-green">→ Run:</span> <span class="p-cyan">safenpm install '+esc(typo.target)+'</span>','');
+      typeLines(l, prompt); return;
+    }
+    l.push('  <span class="p-green">✓</span> Typosquat check passed');
+    if(p){const tc=p.tier==='trusted'?'p-green':p.tier==='established'?'p-blue':'p-yellow';l.push('  <span class="p-green">✓</span> Reputation: <span class="'+tc+'">'+p.score+'/100 ('+p.tier+')</span>');}
+    else l.push('  <span class="p-yellow">!</span> Reputation: <span class="p-yellow">unknown package</span>');
+    l.push('  <span class="p-green">✓</span> Lockfile audit: <span class="p-green">clean</span>','');
+    const dc=p?Math.floor(Math.random()*30+10):Math.floor(Math.random()*50+5);
+    l.push('<span class="p-dim">⏳ Phase 2: npm install...</span>','  <span class="p-dim">added '+dc+' packages in 2.'+Math.floor(Math.random()*9)+'s</span>','');
+    if(p&&p.scripts){
+      l.push('<span class="p-dim">⏳ Phase 3: Sandbox postinstall scripts...</span>',
+        '  <span class="p-cyan">▶</span> Running postinstall for '+esc(name)+' in sandbox...',
+        '    <span class="p-dim">├─ sandbox: macOS sandbox-exec</span>',
+        '    <span class="p-dim">├─ network: blocked</span>',
+        '    <span class="p-dim">├─ filesystem: read-only (except node_modules/)</span>',
+        '    <span class="p-dim">└─ duration: 1.'+Math.floor(Math.random()*9)+'s</span>',
+        '  <span class="p-green">✓</span> postinstall completed — <span class="p-green">no violations</span>');
+    } else {
+      l.push('<span class="p-dim">⏳ Phase 3: Sandbox...</span>','  <span class="p-green">✓</span> No postinstall scripts to sandbox');
+    }
+    const sc=p?p.score:(40+Math.floor(Math.random()*30));
+    l.push('','<span class="p-green p-bold">✓ Install complete</span>','',
+      '  <span class="p-dim">Packages:</span>   '+dc+' installed',
+      '  <span class="p-dim">Scripts:</span>    '+(p&&p.scripts?'1 sandboxed, 0 violations':'none'),
+      '  <span class="p-dim">Typosquats:</span> 0 found',
+      '  <span class="p-dim">Score:</span>      '+sc+'/100','');
+    typeLines(l, prompt);
+  }
+
+  function cmdDoctor() {
+    const secs=[
+      {n:'Lockfile Health',w:20,s:95,g:'A',f:[{v:'pass',m:'package-lock.json exists'},{v:'pass',m:'Using lockfile v3 format'},{v:'info',m:'247 packages audited'}]},
+      {n:'Install Scripts',w:25,s:88,g:'B+',f:[{v:'pass',m:'243 packages have no install scripts'},{v:'warn',m:'4 packages have postinstall scripts'},{v:'pass',m:'All scripts passed sandbox'}]},
+      {n:'Typosquat Scan',w:20,s:100,g:'A+',f:[{v:'pass',m:'0 typosquats detected'}]},
+      {n:'Reputation',w:15,s:78,g:'B',f:[{v:'pass',m:'198 packages trusted/established'},{v:'warn',m:'12 packages rated unknown'}]},
+      {n:'Behavior Analysis',w:10,s:92,g:'A-',f:[{v:'pass',m:'No network violations'},{v:'pass',m:'No filesystem violations'}]},
+      {n:'Project Hygiene',w:10,s:70,g:'B-',f:[{v:'pass',m:'.safenpmrc config found'},{v:'warn',m:'3 wildcard version ranges (*)'}]},
+    ];
+    const ov=secs.reduce((s,c)=>s+c.s*c.w/100,0);
+    const og=ov>=97?'A+':ov>=93?'A':ov>=90?'A-':ov>=87?'B+':ov>=83?'B':ov>=80?'B-':ov>=77?'C+':ov>=73?'C':'C-';
+    const gc=og.startsWith('A')?'p-green':og.startsWith('B')?'p-blue':'p-yellow';
+    const l=['<span class="p-green p-bold">safenpm doctor</span> <span class="p-dim">v0.5.0</span>','',
+      '  <span class="'+gc+' p-bold">┌─────────────┐</span>',
+      '  <span class="'+gc+' p-bold">│  Grade: '+og.padEnd(3)+' │</span>',
+      '  <span class="'+gc+' p-bold">│  Score: '+Math.round(ov).toString().padEnd(3)+' │</span>',
+      '  <span class="'+gc+' p-bold">└─────────────┘</span>',''];
+    for(const s of secs){
+      const sc=s.g.startsWith('A')?'p-green':s.g.startsWith('B')?'p-blue':'p-yellow';
+      const bl=15,fl=Math.round(s.s/100*bl);
+      l.push('  <span class="p-bold">'+s.n.padEnd(20)+'</span> <span class="'+sc+'">'+'█'.repeat(fl)+'</span><span class="p-dim">'+'░'.repeat(bl-fl)+'</span> <span class="'+sc+'">'+s.g+'</span> <span class="p-dim">('+s.w+'%)</span>');
+      for(const f of s.f){const ic=f.v==='pass'?'<span class="p-green">✓</span>':f.v==='warn'?'<span class="p-yellow">!</span>':'<span class="p-dim">·</span>';l.push('    '+ic+' <span class="p-dim">'+f.m+'</span>');}
+      l.push('');
+    }
+    l.push('<span class="p-dim">Run</span> <span class="p-cyan">safenpm fix</span> <span class="p-dim">to auto-fix issues.</span>','');
+    typeLines(l, prompt);
+  }
+
+  function cmdDiff(name) {
+    if(!name){ln('<span class="p-red">Usage:</span> safenpm diff &lt;package-name&gt;');ln('');prompt();return;}
+    const p=PKG_DATA[name], l=['<span class="p-dim">Comparing '+esc(name)+' against last snapshot...</span>',''];
+    if(p){
+      const oldV=p.v.replace(/\d+$/,m=>Math.max(0,parseInt(m)-1));
+      l.push('  <span class="p-bold">'+esc(name)+'</span> <span class="p-red">'+oldV+'</span> → <span class="p-green">'+p.v+'</span>','',
+        '  <span class="p-cyan p-bold">Scripts:</span>','    <span class="p-dim">'+(p.scripts?'postinstall (unchanged)':'No install scripts (unchanged)')+'</span>','',
+        '  <span class="p-cyan p-bold">Dependencies:</span>',
+        '    <span class="p-yellow">~</span> debug: <span class="p-red">4.3.4</span> → <span class="p-green">4.3.5</span>',
+        '    <span class="p-green">+</span> semver: <span class="p-green">7.6.2</span>','',
+        '  <span class="p-cyan p-bold">Files:</span>',
+        '    <span class="p-dim">'+(5+Math.floor(Math.random()*10))+' files changed</span>',
+        '    <span class="p-green">+ 23 lines added</span>',
+        '    <span class="p-red">- 8 lines removed</span>');
+    } else {
+      l.push('  <span class="p-yellow">No snapshot found for '+esc(name)+'.</span>',
+        '  <span class="p-dim">Run</span> <span class="p-cyan">safenpm install '+esc(name)+'</span> <span class="p-dim">first to create a baseline.</span>');
+    }
+    l.push(''); typeLines(l, prompt);
+  }
+
+  function cmdFix(name) {
+    const l=[];
+    if(name){
+      const typo=checkTypo(name);
+      if(typo){
+        l.push('<span class="p-green p-bold">safenpm fix</span>','',
+          '  <span class="p-red">⚠</span> <span class="p-bold">'+esc(typo.suspect)+'</span> <span class="p-dim">→ typosquat of</span> <span class="p-yellow">'+esc(typo.target)+'</span>','',
+          '    <span class="p-red">- npm uninstall '+esc(typo.suspect)+'</span>',
+          '    <span class="p-green">+ npm install '+esc(typo.target)+'</span>','',
+          '  <span class="p-green">✓ Fixed!</span> <span class="p-dim">Replaced</span> <span class="p-red">'+esc(typo.suspect)+'</span> <span class="p-dim">with</span> <span class="p-green">'+esc(typo.target)+'</span>');
+      } else l.push('<span class="p-green">✓</span> No issues found for <span class="p-bold">'+esc(name)+'</span>');
+    } else {
+      l.push('<span class="p-green p-bold">safenpm fix</span> <span class="p-dim">— scanning...</span>','',
+        '  <span class="p-green">✓</span> No typosquats detected',
+        '  <span class="p-green">✓</span> No blocked packages',
+        '  <span class="p-dim">·</span> <span class="p-dim">3 wildcard versions found (run with --strict to pin)</span>','',
+        '<span class="p-green p-bold">✓ Project is clean.</span>');
+    }
+    l.push(''); typeLines(l, prompt);
+  }
+
+  // Init
+  prompt();
+
+  // Quick chips
+  document.querySelectorAll('.quick-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      const cmd = chip.dataset.cmd;
+      const inp = body.querySelector('.play-input:not([disabled])');
+      if (inp) {
+        const wrap = inp.parentElement;
+        inp.disabled = true;
+        wrap.innerHTML = '<span class="play-prompt">$ </span><span class="p-white">' + esc(cmd) + '</span>';
+        if (cmd) { cmdHistory.push(cmd); histIdx = cmdHistory.length; }
+        if (cmd === 'clear') clearTerm();
+        else exec(cmd);
+      }
+    });
+  });
+
+  // Click to focus
+  body.addEventListener('click', function(e) {
+    if (e.target === body || e.target.classList.contains('play-line')) {
+      const inp = body.querySelector('.play-input:not([disabled])');
+      if (inp) inp.focus();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

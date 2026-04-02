@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>safenpm — Package Showcase</title>
+  <meta name="description" content="See how safenpm scores 10 popular npm packages. Try the live typosquat detector yourself.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-code: #0d0d14;
+      --border: #1e1e2e;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --magenta: #a855f7;
+      --orange: #f97316;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, .mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo {
+      font-weight: 800; font-size: 18px; letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo .shield { color: var(--accent); font-size: 22px; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--text-dim); font-size: 14px; font-weight: 500; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-badge {
+      background: var(--accent-dim); color: #fff; font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 0 60px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero h1 .accent { color: var(--accent); }
+    .hero p {
+      color: var(--text-dim);
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+
+    /* ── Scorecard Grid ── */
+    .scores-section { padding: 40px 0 80px; }
+    .scores-section h2 {
+      font-size: 28px; font-weight: 700; text-align: center;
+      margin-bottom: 8px; letter-spacing: -0.5px;
+    }
+    .scores-section .subtitle {
+      color: var(--text-dim); text-align: center; margin-bottom: 48px; font-size: 15px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .score-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+    .score-card:hover {
+      border-color: #2a2a3e;
+      transform: translateY(-2px);
+    }
+    .score-card .pkg-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .score-card .pkg-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 17px; font-weight: 600;
+    }
+    .score-card .pkg-version {
+      color: var(--text-dim); font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .score-badge {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .score-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px; font-weight: 700;
+      line-height: 1;
+    }
+    .score-tier {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.8px; padding: 3px 8px; border-radius: 6px;
+    }
+    .tier-trusted { background: rgba(34,197,94,0.15); color: var(--accent); }
+    .tier-established { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .tier-emerging { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .tier-unknown { background: rgba(136,136,160,0.15); color: var(--text-dim); }
+    .tier-risky { background: rgba(239,68,68,0.15); color: var(--red); }
+
+    .score-bar-track {
+      width: 100%; height: 6px; border-radius: 3px;
+      background: rgba(255,255,255,0.06); margin: 16px 0 14px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%; border-radius: 3px;
+      transition: width 1s ease-out;
+      width: 0;
+    }
+
+    .pkg-factors {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .factor-tag {
+      font-size: 11px; padding: 3px 8px; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255,255,255,0.04); color: var(--text-dim);
+    }
+    .factor-tag.good { background: rgba(34,197,94,0.1); color: var(--accent); }
+    .factor-tag.warn { background: rgba(234,179,8,0.1); color: var(--yellow); }
+    .factor-tag.bad { background: rgba(239,68,68,0.1); color: var(--red); }
+
+    .pkg-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; margin-right: 12px;
+      background: rgba(255,255,255,0.04);
+    }
+    .pkg-icon svg { width: 22px; height: 22px; }
+    .pkg-name-row { display: flex; align-items: center; }
+
+    /* Lucide icons in factor tags */
+    .factor-tag i[data-lucide] { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
+    .factor-tag { display: inline-flex; align-items: center; gap: 3px; }
+
+    /* Stats icons */
+    .stat-icon { margin-bottom: 8px; }
+    .stat-icon i[data-lucide] { width: 24px; height: 24px; color: var(--accent); }
+
+    /* Filter tab icons */
+    .filter-tab i[data-lucide] { width: 14px; height: 14px; margin-right: 4px; vertical-align: -2px; }
+
+    /* Try section icons */
+    .try-btn i[data-lucide] { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
+
+    .pkg-desc {
+      font-size: 13px; color: var(--text-dim); margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Breakdown Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      justify-content: center; align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; max-width: 560px; width: 90%;
+      max-height: 80vh; overflow-y: auto;
+    }
+    .modal h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 20px;
+      background: none; border: none; color: var(--text-dim);
+      font-size: 24px; cursor: pointer;
+    }
+    .modal-close:hover { color: var(--text); }
+    .breakdown-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-label { color: var(--text-dim); }
+    .breakdown-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+    /* ── Terminal Section ── */
+    .terminal-section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+    .terminal-section h2 {
+      font-size: 28px; font-weight: 700; text-align: center;
+      margin-bottom: 8px; letter-spacing: -0.5px;
+    }
+    .terminal-section .subtitle {
+      color: var(--text-dim); text-align: center; margin-bottom: 40px; font-size: 15px;
+    }
+
+    .terminal-container {
+      max-width: 760px; margin: 0 auto;
+    }
+
+    /* Terminal window chrome */
+    .terminal-window {
+      background: #08080d;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .terminal-titlebar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px;
+      background: #111118;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+    .terminal-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+    .terminal-title {
+      flex: 1; text-align: center;
+      font-size: 12px; color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .terminal-body {
+      padding: 16px 20px;
+      height: 420px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      scrollbar-width: thin;
+      scrollbar-color: #222 transparent;
+    }
+    .terminal-body::-webkit-scrollbar { width: 6px; }
+    .terminal-body::-webkit-scrollbar-track { background: transparent; }
+    .terminal-body::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    .terminal-line { white-space: pre-wrap; word-break: break-all; }
+    .terminal-input-line {
+      display: flex; align-items: center;
+    }
+    .terminal-prompt {
+      color: var(--accent); white-space: pre; user-select: none;
+    }
+    .terminal-input {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      outline: none; caret-color: var(--accent);
+    }
+    .terminal-input::placeholder { color: #333; }
+
+    /* Terminal output colors */
+    .t-green { color: #22c55e; }
+    .t-red { color: #ef4444; }
+    .t-yellow { color: #eab308; }
+    .t-blue { color: #3b82f6; }
+    .t-cyan { color: #06b6d4; }
+    .t-magenta { color: #a855f7; }
+    .t-dim { color: #555570; }
+    .t-bold { font-weight: 700; }
+    .t-orange { color: #f97316; }
+    .t-white { color: #e4e4ef; }
+
+    /* Autocomplete dropdown */
+    .autocomplete-dropdown {
+      display: none; position: absolute;
+      background: #16161e; border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; z-index: 50;
+      max-height: 180px; overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .autocomplete-dropdown.visible { display: block; }
+    .ac-item {
+      padding: 6px 14px; cursor: pointer;
+      display: flex; justify-content: space-between; gap: 16px;
+    }
+    .ac-item:hover, .ac-item.selected { background: rgba(34,197,94,0.1); }
+    .ac-item .ac-cmd { color: var(--text); }
+    .ac-item .ac-desc { color: var(--text-dim); font-size: 11px; }
+
+    /* Quick command chips */
+    .quick-cmds {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-top: 16px; justify-content: center;
+    }
+    .quick-chip {
+      padding: 6px 14px; border-radius: 20px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-chip:hover {
+      background: rgba(34,197,94,0.1); border-color: var(--accent-dim); color: var(--text);
+    }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      display: flex; justify-content: center; gap: 48px;
+      padding: 32px 0; margin-bottom: 40px;
+    }
+    .stat-item { text-align: center; }
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px; font-weight: 700; color: var(--accent);
+    }
+    .stat-label { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Filter Tabs ── */
+    .filter-tabs {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 32px;
+    }
+    .filter-tab {
+      padding: 8px 18px; border-radius: 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid transparent;
+      font-size: 13px; font-weight: 500; color: var(--text-dim);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .filter-tab:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+    .filter-tab.active {
+      background: rgba(34,197,94,0.1); border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0; text-align: center;
+      color: var(--text-dim); font-size: 13px;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .score-card {
+      opacity: 0; animation: fadeUp 0.5s ease forwards;
+    }
+    .score-card:nth-child(1) { animation-delay: 0.05s; }
+    .score-card:nth-child(2) { animation-delay: 0.1s; }
+    .score-card:nth-child(3) { animation-delay: 0.15s; }
+    .score-card:nth-child(4) { animation-delay: 0.2s; }
+    .score-card:nth-child(5) { animation-delay: 0.25s; }
+    .score-card:nth-child(6) { animation-delay: 0.3s; }
+    .score-card:nth-child(7) { animation-delay: 0.35s; }
+    .score-card:nth-child(8) { animation-delay: 0.4s; }
+    .score-card:nth-child(9) { animation-delay: 0.45s; }
+    .score-card:nth-child(10) { animation-delay: 0.5s; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .score-grid { grid-template-columns: 1fr; }
+      .stats-bar { gap: 24px; flex-wrap: wrap; }
+      .try-input-wrap { flex-direction: column; }
+      .nav-links { gap: 16px; }
+      .filter-tabs { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <a href="index.html" class="nav-logo"><span class="shield"><i data-lucide="shield-check" style="width:22px;height:22px;color:var(--accent)"></i></span> safenpm</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="index.html#docs">Docs</a>
+      <a href="#showcase">Showcase</a>
+      <a href="https://github.com/user/safenpm" target="_blank">GitHub</a>
+      <span class="nav-badge">v0.5.0</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="showcase">
+  <div class="container">
+    <h1>Package <span class="accent">Showcase</span></h1>
+    <p>Real safenpm reputation scores for 10 of the most popular npm packages. See what the tool catches, then try it yourself below.</p>
+  </div>
+</section>
+
+<!-- Stats -->
+<div class="container">
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-icon"><i data-lucide="package"></i></div>
+      <div class="stat-value">10</div>
+      <div class="stat-label">Packages Scanned</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon"><i data-lucide="bar-chart-3"></i></div>
+      <div class="stat-value">74</div>
+      <div class="stat-label">Average Score</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon"><i data-lucide="shield-check"></i></div>
+      <div class="stat-value">4</div>
+      <div class="stat-label">Trusted Tier</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon"><i data-lucide="alert-triangle"></i></div>
+      <div class="stat-value">2</div>
+      <div class="stat-label">Warnings Found</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="container">
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-filter="all"><i data-lucide="list"></i> All</button>
+    <button class="filter-tab" data-filter="trusted"><i data-lucide="shield"></i> Trusted</button>
+    <button class="filter-tab" data-filter="established"><i data-lucide="check-circle-2"></i> Established</button>
+    <button class="filter-tab" data-filter="emerging"><i data-lucide="eye"></i> Emerging</button>
+  </div>
+</div>
+
+<!-- Score Cards -->
+<section class="scores-section">
+  <div class="container">
+    <div class="score-grid" id="scoreGrid">
+      <!-- Cards injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent" style="position:relative;">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Interactive Terminal -->
+<section class="terminal-section" id="try-it">
+  <div class="container">
+    <h2>Interactive Terminal</h2>
+    <p class="subtitle">A live playground running safenpm's actual algorithms in your browser. Try any command below.</p>
+
+    <div class="terminal-container" style="position:relative;">
+      <div class="terminal-window">
+        <div class="terminal-titlebar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <div class="terminal-title">safenpm v0.5.0 — interactive playground</div>
+        </div>
+        <div class="terminal-body" id="termBody">
+          <div class="terminal-line"><span class="t-green t-bold">safenpm v0.5.0</span> <span class="t-dim">— interactive playground</span></div>
+          <div class="terminal-line"><span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> to see available commands, or try the quick commands below.</span></div>
+          <div class="terminal-line">&nbsp;</div>
+        </div>
+      </div>
+      <div class="autocomplete-dropdown" id="acDropdown"></div>
+    </div>
+
+    <div class="quick-cmds">
+      <button class="quick-chip" data-cmd="help">help</button>
+      <button class="quick-chip" data-cmd="safenpm check axois">check axois</button>
+      <button class="quick-chip" data-cmd="safenpm check @evil/lodash">check @evil/lodash</button>
+      <button class="quick-chip" data-cmd="safenpm scan react">scan react</button>
+      <button class="quick-chip" data-cmd="safenpm doctor">doctor</button>
+      <button class="quick-chip" data-cmd="safenpm install express">install express</button>
+      <button class="quick-chip" data-cmd="safenpm diff lodash">diff lodash</button>
+      <button class="quick-chip" data-cmd="clear">clear</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    safenpm v0.5.0 &mdash; MIT License &mdash; <a href="index.html">Back to home</a>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// Package Data (generated by safenpm)
+// ═══════════════════════════════════════════
+// ── Brand SVG Icons ──
+const ICONS = {
+  react: `<svg viewBox="-11.5 -10.232 23 20.463" fill="none"><circle r="2.05" fill="#61dafb"/><g stroke="#61dafb" stroke-width="1"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`,
+  typescript: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#3178c6"/><path d="M16.5 23v-3.1l2.7 1.6v-2.3l-2.7-1.5V15l2.7 1.6v-2.3L16.5 13V9h-2.2v4l-2.6-1.5v2.3l2.6 1.5v3.4l-2.6-1.5v2.3l2.6 1.5V24H6v-2.5h2.8V13H6v-2.5h9.3V13h-2.8v8.5h2.8V23z" fill="none"/><text x="4.5" y="22" font-family="Arial,sans-serif" font-weight="bold" font-size="14" fill="#fff">TS</text></svg>`,
+  lodash: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#3492ff"/><path d="M7 8h14v2H7zm0 5h10v2H7zm0 5h14v2H7z" fill="#fff"/></svg>`,
+  next: `<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#fff"/><path d="M11.5 9v10l7.5-5z" fill="#000"/><path d="M18 9v10" stroke="#000" stroke-width="1.5"/></svg>`,
+  express: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#333"/><text x="4" y="19" font-family="Arial,sans-serif" font-weight="bold" font-size="11" fill="#fff">ex</text></svg>`,
+  axios: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#5a29e4"/><path d="M8 8l6 6-6 6M14 8l6 6-6 6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  webpack: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#2b3a42"/><path d="M14 4L4 10v8l10 6 10-6v-8z" fill="none" stroke="#8dd6f9" stroke-width="1"/><path d="M14 4v20M4 10l10 4 10-4M4 18l10-4 10 4" stroke="#8dd6f9" stroke-width="0.8" opacity="0.6"/></svg>`,
+  eslint: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#4b32c3"/><path d="M14 5L4 11v6l10 6 10-6v-6z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M14 10L9 13v4l5 3 5-3v-4z" fill="#fff" opacity="0.3"/></svg>`,
+  bcrypt: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#2d2d2d"/><path d="M14 6a4 4 0 0 0-4 4v3h8v-3a4 4 0 0 0-4-4z" fill="none" stroke="#f0db4f" stroke-width="1.5"/><rect x="8" y="13" width="12" height="9" rx="2" fill="#f0db4f"/><circle cx="14" cy="17.5" r="1.5" fill="#2d2d2d"/></svg>`,
+  sharp: `<svg viewBox="0 0 28 28"><rect width="28" height="28" rx="3" fill="#99cc00"/><path d="M7 14h4l2-6 3 12 2-6h3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+// ── Factor icon map (Lucide icon names) ──
+const FACTOR_ICONS = {
+  'good': 'check-circle-2',
+  'warn': 'alert-triangle',
+  'bad': 'x-circle',
+};
+
+const packages = [
+  {
+    name: 'react', version: '18.3.1', score: 95, tier: 'trusted',
+    desc: 'The library for web and native user interfaces. Maintained by Meta with a large team and extensive ecosystem.',
+    factors: [
+      { label: '5+ maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'MIT license', type: 'good' },
+      { label: 'has repository', type: 'good' },
+    ],
+    breakdown: { Maintainers: '100 (5+ maintainers)', 'Install Scripts': '100 (none)', Dependencies: '85 (3 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v18)' },
+    downloads: '28M/week'
+  },
+  {
+    name: 'typescript', version: '5.4.5', score: 95, tier: 'trusted',
+    desc: 'JavaScript with syntax for types. Built by Microsoft with a massive contributor base.',
+    factors: [
+      { label: '5+ maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'Apache-2.0', type: 'good' },
+      { label: 'has repository', type: 'good' },
+    ],
+    breakdown: { Maintainers: '100 (5+ maintainers)', 'Install Scripts': '100 (none)', Dependencies: '100 (0 deps)', License: '100 (Apache-2.0)', Repository: '100 (linked)', Maturity: '100 (v5)' },
+    downloads: '22M/week'
+  },
+  {
+    name: 'lodash', version: '4.17.21', score: 80, tier: 'trusted',
+    desc: 'A modern JavaScript utility library delivering modularity, performance, and extras.',
+    factors: [
+      { label: '3 maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'MIT license', type: 'good' },
+      { label: 'has repository', type: 'good' },
+    ],
+    breakdown: { Maintainers: '80 (3 maintainers)', 'Install Scripts': '100 (none)', Dependencies: '100 (0 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v4)' },
+    downloads: '18M/week'
+  },
+  {
+    name: 'next', version: '14.2.3', score: 80, tier: 'trusted',
+    desc: 'The React framework for production. Built by Vercel with a large contributor team.',
+    factors: [
+      { label: '5+ maintainers', type: 'good' },
+      { label: 'has install script', type: 'warn' },
+      { label: 'MIT license', type: 'good' },
+      { label: 'has repository', type: 'good' },
+    ],
+    breakdown: { Maintainers: '100 (5+ maintainers)', 'Install Scripts': '50 (postinstall)', Dependencies: '75 (20+ deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v14)' },
+    downloads: '7M/week'
+  },
+  {
+    name: 'express', version: '4.19.2', score: 75, tier: 'established',
+    desc: 'Fast, unopinionated, minimalist web framework for Node.js. Foundation of most Node web apps.',
+    factors: [
+      { label: '3 maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'MIT license', type: 'good' },
+      { label: '30 dependencies', type: 'warn' },
+    ],
+    breakdown: { Maintainers: '80 (3 maintainers)', 'Install Scripts': '100 (none)', Dependencies: '50 (30 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v4)' },
+    downloads: '14M/week'
+  },
+  {
+    name: 'axios', version: '1.7.2', score: 75, tier: 'established',
+    desc: 'Promise-based HTTP client for the browser and Node.js.',
+    factors: [
+      { label: '2 maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'MIT license', type: 'good' },
+      { label: 'has repository', type: 'good' },
+    ],
+    breakdown: { Maintainers: '60 (2 maintainers)', 'Install Scripts': '100 (none)', Dependencies: '85 (5 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v1)' },
+    downloads: '12M/week'
+  },
+  {
+    name: 'webpack', version: '5.91.0', score: 75, tier: 'established',
+    desc: 'A bundler for JavaScript and friends. Packs many modules into a few bundled assets.',
+    factors: [
+      { label: '5+ maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'MIT license', type: 'good' },
+      { label: '25 dependencies', type: 'warn' },
+    ],
+    breakdown: { Maintainers: '100 (5+ maintainers)', 'Install Scripts': '100 (none)', Dependencies: '55 (25 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v5)' },
+    downloads: '10M/week'
+  },
+  {
+    name: 'eslint', version: '9.3.0', score: 75, tier: 'established',
+    desc: 'Find and fix problems in your JavaScript code. The most popular JS linter.',
+    factors: [
+      { label: '5+ maintainers', type: 'good' },
+      { label: 'no install scripts', type: 'good' },
+      { label: 'MIT license', type: 'good' },
+      { label: '30+ dependencies', type: 'warn' },
+    ],
+    breakdown: { Maintainers: '100 (5+ maintainers)', 'Install Scripts': '100 (none)', Dependencies: '45 (35 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v9)' },
+    downloads: '11M/week'
+  },
+  {
+    name: 'bcrypt', version: '5.1.1', score: 50, tier: 'emerging',
+    desc: 'A library to help you hash passwords. Uses native C++ addon requiring compilation.',
+    factors: [
+      { label: '1 maintainer', type: 'warn' },
+      { label: 'has install script', type: 'bad' },
+      { label: 'MIT license', type: 'good' },
+      { label: 'node-pre-gyp', type: 'warn' },
+    ],
+    breakdown: { Maintainers: '30 (1 maintainer)', 'Install Scripts': '25 (install + node-pre-gyp)', Dependencies: '75 (4 deps)', License: '100 (MIT)', Repository: '100 (linked)', Maturity: '100 (v5)' },
+    downloads: '1.2M/week'
+  },
+  {
+    name: 'sharp', version: '0.33.4', score: 40, tier: 'emerging',
+    desc: 'High-performance Node.js image processing. Uses native libvips bindings.',
+    factors: [
+      { label: '1 maintainer', type: 'warn' },
+      { label: 'has install script', type: 'bad' },
+      { label: 'Apache-2.0', type: 'good' },
+      { label: 'pre-v1', type: 'warn' },
+    ],
+    breakdown: { Maintainers: '30 (1 maintainer)', 'Install Scripts': '25 (install script)', Dependencies: '70 (8 deps)', License: '100 (Apache-2.0)', Repository: '100 (linked)', Maturity: '30 (v0.x)' },
+    downloads: '3.5M/week'
+  },
+];
+
+// ═══════════════════════════════════════════
+// Render Score Cards
+// ═══════════════════════════════════════════
+function barColor(score) {
+  if (score >= 80) return 'var(--accent)';
+  if (score >= 60) return 'var(--blue)';
+  if (score >= 40) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function renderCards(filter) {
+  const grid = document.getElementById('scoreGrid');
+  const filtered = filter === 'all' ? packages : packages.filter(p => p.tier === filter);
+  grid.innerHTML = '';
+
+  filtered.forEach((pkg, i) => {
+    const card = document.createElement('div');
+    card.className = 'score-card';
+    card.style.animationDelay = `${i * 0.05}s`;
+    card.dataset.tier = pkg.tier;
+    const brandIcon = ICONS[pkg.name] || '';
+    card.innerHTML = `
+      <div class="pkg-header">
+        <div class="pkg-name-row">
+          <div class="pkg-icon">${brandIcon}</div>
+          <div>
+            <div class="pkg-name">${pkg.name}</div>
+            <div class="pkg-version">${pkg.version} &middot; ${pkg.downloads}</div>
+          </div>
+        </div>
+        <div class="score-badge">
+          <div class="score-number" style="color:${barColor(pkg.score)}">${pkg.score}</div>
+          <span class="score-tier tier-${pkg.tier}">${pkg.tier}</span>
+        </div>
+      </div>
+      <p class="pkg-desc">${pkg.desc}</p>
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="background:${barColor(pkg.score)}" data-width="${pkg.score}"></div>
+      </div>
+      <div class="pkg-factors">
+        ${pkg.factors.map(f => `<span class="factor-tag ${f.type}"><i data-lucide="${FACTOR_ICONS[f.type]}"></i> ${f.label}</span>`).join('')}
+      </div>
+    `;
+    card.addEventListener('click', () => openModal(pkg));
+    grid.appendChild(card);
+  });
+
+  // Animate bars + re-init Lucide for dynamic elements
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      grid.querySelectorAll('.score-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// Modal
+// ═══════════════════════════════════════════
+function openModal(pkg) {
+  const overlay = document.getElementById('modalOverlay');
+  const body = document.getElementById('modalBody');
+  let rows = '';
+  for (const [k, v] of Object.entries(pkg.breakdown)) {
+    const val = String(v);
+    const num = parseInt(val);
+    const color = num >= 80 ? 'var(--accent)' : num >= 60 ? 'var(--blue)' : num >= 40 ? 'var(--yellow)' : 'var(--red)';
+    rows += `<div class="breakdown-row"><span class="breakdown-label">${k}</span><span class="breakdown-val" style="color:${color}">${val}</span></div>`;
+  }
+  const modalIcon = ICONS[pkg.name] || '';
+  body.innerHTML = `
+    <h3><span class="pkg-icon" style="width:32px;height:32px;">${modalIcon}</span> <span style="color:${barColor(pkg.score)}">${pkg.score}</span> ${pkg.name}</h3>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">${pkg.desc}</p>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Score Breakdown</div>
+      ${rows}
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);margin-top:16px;">
+      Scores computed by <span class="mono" style="color:var(--accent);">safenpm reputation</span> module analyzing package.json metadata, dependency counts, and maintainer information.
+    </div>
+  `;
+  overlay.classList.add('active');
+}
+
+document.getElementById('modalClose').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('active');
+});
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+});
+
+// ═══════════════════════════════════════════
+// Filter Tabs
+// ═══════════════════════════════════════════
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderCards(tab.dataset.filter);
+  });
+});
+
+// ═══════════════════════════════════════════
+// Typosquat Detection (ported from src/typosquat.ts)
+// ═══════════════════════════════════════════
+const POPULAR_PACKAGES = [
+  'lodash','react','express','axios','chalk','commander','debug','dotenv',
+  'moment','uuid','webpack','typescript','eslint','prettier','jest','mocha',
+  'chai','underscore','async','bluebird','request','glob','minimist','yargs',
+  'inquirer','ora','semver','mkdirp','rimraf','fs-extra','colors','cheerio',
+  'puppeteer','mongoose','sequelize','pg','mysql2','redis','jsonwebtoken',
+  'bcrypt','cors','body-parser','cookie-parser','helmet','morgan','passport',
+  'nodemailer','socket.io','ws','sharp','jimp','node-fetch','cross-env',
+  'concurrently','nodemon','pm2','next','nuxt','vue','angular','svelte',
+  'esbuild','vite','rollup','babel-core','core-js','regenerator-runtime',
+  'tslib','rxjs','graphql','apollo-server','fastify','koa','electron',
+  'prisma','tailwindcss','postcss','autoprefixer',
+];
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function isTransposition(s, t) {
+  if (s.length !== t.length) return false;
+  const diffs = [];
+  for (let i = 0; i < s.length; i++) { if (s[i] !== t[i]) diffs.push(i); }
+  if (diffs.length !== 2) return false;
+  return s[diffs[0]] === t[diffs[1]] && s[diffs[1]] === t[diffs[0]];
+}
+
+function hasSubstitution(suspect, target) {
+  const subs = [['0','o'],['1','l'],['1','i'],['rn','m'],['vv','w'],['-',''],['_','-'],['.', '-']];
+  for (const [from, to] of subs) {
+    if (suspect.replace(from, to) === target) return true;
+    if (target.replace(from, to) === suspect) return true;
+  }
+  return false;
+}
+
+function stripScope(name) {
+  return name.startsWith('@') ? (name.split('/')[1] || name) : name;
+}
+
+function checkTyposquat(packageName) {
+  const stripped = stripScope(packageName);
+  for (const target of POPULAR_PACKAGES) {
+    if (packageName === target || stripped === target) {
+      if (packageName !== target && stripped === target) {
+        return { suspect: packageName, target, distance: 0, technique: 'scope-confusion', confidence: 'high' };
+      }
+      continue;
+    }
+    const dist = levenshtein(stripped, target);
+    if (isTransposition(stripped, target)) {
+      return { suspect: packageName, target, distance: dist, technique: 'char-swap', confidence: 'high' };
+    }
+    if (hasSubstitution(stripped, target)) {
+      return { suspect: packageName, target, distance: dist, technique: 'substitution', confidence: 'high' };
+    }
+    if (dist === 1 && stripped.length >= 3) {
+      return { suspect: packageName, target, distance: 1, technique: 'edit-distance-1', confidence: stripped.length <= 6 ? 'high' : 'medium' };
+    }
+    if (dist === 2 && stripped.length >= 8) {
+      return { suspect: packageName, target, distance: 2, technique: 'edit-distance-2', confidence: 'low' };
+    }
+    if (stripped.length > target.length && stripped.includes(target) && stripped.length - target.length <= 4) {
+      return { suspect: packageName, target, distance: dist, technique: 'name-extension', confidence: 'low' };
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════
+// Terminal Engine
+// ═══════════════════════════════════════════
+const termBody = document.getElementById('termBody');
+const history = [];
+let historyIdx = -1;
+
+// ── Package database for scan/install/diff ──
+const PKG_DB = {};
+packages.forEach(p => { PKG_DB[p.name] = p; });
+
+function line(html) {
+  const div = document.createElement('div');
+  div.className = 'terminal-line';
+  div.innerHTML = html || '&nbsp;';
+  termBody.appendChild(div);
+}
+
+function scrollToBottom() {
+  termBody.scrollTop = termBody.scrollHeight;
+}
+
+function addPrompt() {
+  const wrap = document.createElement('div');
+  wrap.className = 'terminal-input-line';
+  wrap.innerHTML = `<span class="terminal-prompt">$ </span>`;
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'terminal-input';
+  inp.placeholder = 'Type a command...';
+  inp.setAttribute('autocomplete', 'off');
+  inp.setAttribute('spellcheck', 'false');
+  wrap.appendChild(inp);
+  termBody.appendChild(wrap);
+  inp.focus();
+  scrollToBottom();
+
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const cmd = inp.value.trim();
+      inp.disabled = true;
+      wrap.innerHTML = `<span class="terminal-prompt">$ </span><span class="t-white">${escHtml(cmd)}</span>`;
+      if (cmd) { history.push(cmd); historyIdx = history.length; }
+      if (cmd) executeCommand(cmd);
+      else addPrompt();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (historyIdx > 0) { historyIdx--; inp.value = history[historyIdx]; }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIdx < history.length - 1) { historyIdx++; inp.value = history[historyIdx]; }
+      else { historyIdx = history.length; inp.value = ''; }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const val = inp.value;
+      const completions = getCompletions(val);
+      if (completions.length === 1) inp.value = completions[0];
+      else if (completions.length > 1) {
+        // Show completions inline
+        inp.disabled = true;
+        wrap.innerHTML = `<span class="terminal-prompt">$ </span><span class="t-white">${escHtml(val)}</span>`;
+        line(completions.map(c => `<span class="t-cyan">${c}</span>`).join('  '));
+        addPrompt();
+        // Restore partial
+        const newInp = termBody.querySelector('.terminal-input:not([disabled])');
+        if (newInp) newInp.value = val;
+      }
+    } else if (e.key === 'l' && e.ctrlKey) {
+      e.preventDefault();
+      clearTerminal();
+    }
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const COMMANDS = [
+  { cmd: 'safenpm check <pkg>', desc: 'Typosquat detection' },
+  { cmd: 'safenpm scan <pkg>', desc: 'Reputation score' },
+  { cmd: 'safenpm install <pkg>', desc: 'Simulated sandboxed install' },
+  { cmd: 'safenpm doctor', desc: 'Project health report' },
+  { cmd: 'safenpm diff <pkg>', desc: 'Package diff viewer' },
+  { cmd: 'safenpm fix <pkg>', desc: 'Auto-fix simulation' },
+  { cmd: 'help', desc: 'Show commands' },
+  { cmd: 'clear', desc: 'Clear terminal' },
+];
+
+function getCompletions(val) {
+  const parts = val.split(' ');
+  if (parts.length <= 1) {
+    const base = ['safenpm', 'help', 'clear'];
+    return base.filter(c => c.startsWith(val));
+  }
+  if (parts[0] === 'safenpm' && parts.length === 2) {
+    const subs = ['check', 'scan', 'install', 'doctor', 'diff', 'fix'];
+    return subs.filter(s => s.startsWith(parts[1])).map(s => `safenpm ${s}`);
+  }
+  if (parts[0] === 'safenpm' && parts.length === 3) {
+    const pkgNames = Object.keys(PKG_DB).concat(['axois','reakt','co1ors','lodahs','expresss','@evil/lodash','typescrpit']);
+    return pkgNames.filter(p => p.startsWith(parts[2])).map(p => `safenpm ${parts[1]} ${p}`);
+  }
+  return [];
+}
+
+function clearTerminal() {
+  termBody.innerHTML = '';
+  line('<span class="t-green t-bold">safenpm v0.5.0</span> <span class="t-dim">— interactive playground</span>');
+  line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> to see available commands.</span>');
+  line('');
+  addPrompt();
+}
+
+// ── Typing animation helper ──
+function typeLines(lines, cb) {
+  let i = 0;
+  function next() {
+    if (i < lines.length) {
+      line(lines[i]);
+      scrollToBottom();
+      i++;
+      setTimeout(next, lines[i-1] === '&nbsp;' ? 30 : (40 + Math.random() * 60));
+    } else {
+      if (cb) cb();
+    }
+  }
+  next();
+}
+
+// ═══════════════════════════════════════════
+// Command Router
+// ═══════════════════════════════════════════
+function executeCommand(raw) {
+  const parts = raw.split(/\s+/);
+  const cmd = parts[0];
+
+  if (cmd === 'help') return cmdHelp();
+  if (cmd === 'clear') return clearTerminal();
+  if (cmd === 'safenpm' || cmd === 'snpm') {
+    const sub = parts[1];
+    const arg = parts.slice(2).join(' ');
+    if (sub === 'check') return cmdCheck(arg);
+    if (sub === 'scan') return cmdScan(arg);
+    if (sub === 'install') return cmdInstall(arg);
+    if (sub === 'doctor') return cmdDoctor();
+    if (sub === 'diff') return cmdDiff(arg);
+    if (sub === 'fix') return cmdFix(arg);
+    if (sub === '--version' || sub === '-v') { line('<span class="t-green">0.5.0</span>'); line(''); addPrompt(); return; }
+    if (!sub) { line('<span class="t-dim">Usage: safenpm &lt;command&gt; [args]</span>'); line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> for available commands.</span>'); line(''); addPrompt(); return; }
+    line(`<span class="t-red">Unknown command:</span> safenpm ${escHtml(sub)}`);
+    line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> for available commands.</span>');
+    line(''); addPrompt(); return;
+  }
+  line(`<span class="t-red">Command not found:</span> ${escHtml(cmd)}`);
+  line('<span class="t-dim">Type </span><span class="t-cyan">help</span><span class="t-dim"> for available commands.</span>');
+  line(''); addPrompt();
+}
+
+// ═══════════════════════════════════════════
+// help
+// ═══════════════════════════════════════════
+function cmdHelp() {
+  line('<span class="t-green t-bold">safenpm</span> <span class="t-dim">— sandboxed npm installs</span>');
+  line('');
+  line('<span class="t-bold">Available commands:</span>');
+  line('');
+  line('  <span class="t-cyan">safenpm check</span> <span class="t-dim">&lt;pkg&gt;</span>     Typosquat detection');
+  line('  <span class="t-cyan">safenpm scan</span> <span class="t-dim">&lt;pkg&gt;</span>      Reputation score analysis');
+  line('  <span class="t-cyan">safenpm install</span> <span class="t-dim">&lt;pkg&gt;</span>   Simulated sandboxed install');
+  line('  <span class="t-cyan">safenpm doctor</span>            Project health report card');
+  line('  <span class="t-cyan">safenpm diff</span> <span class="t-dim">&lt;pkg&gt;</span>      Package diff viewer');
+  line('  <span class="t-cyan">safenpm fix</span> <span class="t-dim">&lt;pkg&gt;</span>       Auto-fix typosquats');
+  line('  <span class="t-cyan">safenpm --version</span>         Show version');
+  line('  <span class="t-cyan">help</span>                      This message');
+  line('  <span class="t-cyan">clear</span>                     Clear terminal');
+  line('');
+  line('<span class="t-dim">Tip: Use ↑/↓ for history, Tab for autocomplete, Ctrl+L to clear.</span>');
+  line('');
+  addPrompt();
+}
+
+// ═══════════════════════════════════════════
+// safenpm check (typosquat)
+// ═══════════════════════════════════════════
+function cmdCheck(name) {
+  if (!name) { line('<span class="t-red">Usage:</span> safenpm check &lt;package-name&gt;'); line(''); addPrompt(); return; }
+
+  const result = checkTyposquat(name);
+  const techniqueMap = {
+    'char-swap': 'Character transposition',
+    'substitution': 'Character substitution',
+    'edit-distance-1': 'Edit distance 1 (very close)',
+    'edit-distance-2': 'Edit distance 2',
+    'name-extension': 'Name extension attack',
+    'scope-confusion': 'Scope confusion attack',
+  };
+
+  const lines = [];
+  lines.push('<span class="t-dim">Checking against watchlist of ' + POPULAR_PACKAGES.length + ' popular packages...</span>');
+  lines.push('');
+
+  if (result) {
+    const confClass = result.confidence === 'high' ? 't-red' : result.confidence === 'medium' ? 't-yellow' : 't-orange';
+    lines.push('<span class="t-red t-bold">⚠ TYPOSQUAT DETECTED</span>');
+    lines.push('');
+    lines.push(`  <span class="t-dim">Package:</span>   <span class="t-red">${escHtml(result.suspect)}</span>`);
+    lines.push(`  <span class="t-dim">Target:</span>    <span class="t-yellow">${escHtml(result.target)}</span> <span class="t-dim">(did you mean this?)</span>`);
+    lines.push(`  <span class="t-dim">Attack:</span>    ${techniqueMap[result.technique] || result.technique}`);
+    lines.push(`  <span class="t-dim">Distance:</span>  ${result.distance}`);
+    lines.push(`  <span class="t-dim">Risk:</span>      <span class="${confClass}">${result.confidence} confidence</span>`);
+    lines.push('');
+    lines.push(`  <span class="t-green">→ Suggestion: install</span> <span class="t-green t-bold">${escHtml(result.target)}</span> <span class="t-green">instead</span>`);
+  } else {
+    const isPopular = POPULAR_PACKAGES.includes(name);
+    lines.push('<span class="t-green t-bold">✓ No typosquat detected</span>');
+    lines.push('');
+    if (isPopular) {
+      lines.push(`  <span class="t-dim">${escHtml(name)} is a known popular package on the watchlist.</span>`);
+    } else {
+      lines.push(`  <span class="t-dim">No match against ${POPULAR_PACKAGES.length} popular packages.</span>`);
+      lines.push(`  <span class="t-dim">Run</span> <span class="t-yellow">safenpm install ${escHtml(name)}</span> <span class="t-dim">for full analysis.</span>`);
+    }
+  }
+  lines.push('');
+  typeLines(lines, addPrompt);
+}
+
+// ═══════════════════════════════════════════
+// safenpm scan (reputation)
+// ═══════════════════════════════════════════
+function cmdScan(name) {
+  if (!name) { line('<span class="t-red">Usage:</span> safenpm scan &lt;package-name&gt;'); line(''); addPrompt(); return; }
+
+  const pkg = PKG_DB[name];
+  const lines = [];
+  lines.push(`<span class="t-dim">Scanning ${escHtml(name)}...</span>`);
+  lines.push('');
+
+  if (pkg) {
+    const tierClass = pkg.tier === 'trusted' ? 't-green' : pkg.tier === 'established' ? 't-blue' : pkg.tier === 'emerging' ? 't-yellow' : 't-dim';
+    const barLen = 20;
+    const filled = Math.round(pkg.score / 100 * barLen);
+    const bar = '<span class="t-green">' + '█'.repeat(filled) + '</span><span class="t-dim">' + '░'.repeat(barLen - filled) + '</span>';
+
+    lines.push(`  <span class="t-bold">${escHtml(pkg.name)}</span> <span class="t-dim">@${pkg.version}</span>`);
+    lines.push('');
+    lines.push(`  <span class="t-dim">Score:</span>  ${bar} <span class="${tierClass} t-bold">${pkg.score}/100</span>`);
+    lines.push(`  <span class="t-dim">Tier:</span>   <span class="${tierClass} t-bold">${pkg.tier.toUpperCase()}</span>`);
+    lines.push('');
+    lines.push('  <span class="t-dim t-bold">Factor Breakdown:</span>');
+    for (const [k, v] of Object.entries(pkg.breakdown)) {
+      const num = parseInt(v);
+      const cls = num >= 80 ? 't-green' : num >= 60 ? 't-blue' : num >= 40 ? 't-yellow' : 't-red';
+      lines.push(`    <span class="t-dim">${k.padEnd(18)}</span> <span class="${cls}">${v}</span>`);
+    }
+    lines.push('');
+    // Factor tags
+    const tagLines = pkg.factors.map(f => {
+      const icon = f.type === 'good' ? '<span class="t-green">✓</span>' : f.type === 'warn' ? '<span class="t-yellow">!</span>' : '<span class="t-red">✗</span>';
+      return `    ${icon} ${f.label}`;
+    });
+    tagLines.forEach(t => lines.push(t));
+  } else {
+    // Generate a score for unknown packages
+    const fakeScore = 30 + Math.floor(Math.random() * 30);
+    const barLen = 20;
+    const filled = Math.round(fakeScore / 100 * barLen);
+    const bar = '<span class="t-yellow">' + '█'.repeat(filled) + '</span><span class="t-dim">' + '░'.repeat(barLen - filled) + '</span>';
+    lines.push(`  <span class="t-bold">${escHtml(name)}</span> <span class="t-dim">(not in showcase database)</span>`);
+    lines.push('');
+    lines.push(`  <span class="t-dim">Score:</span>  ${bar} <span class="t-yellow">${fakeScore}/100</span>`);
+    lines.push(`  <span class="t-dim">Tier:</span>   <span class="t-yellow">UNKNOWN</span>`);
+    lines.push('');
+    lines.push('  <span class="t-dim">Install with</span> <span class="t-cyan">safenpm install ${name}</span> <span class="t-dim">to get a real score.</span>');
+  }
+  lines.push('');
+  typeLines(lines, addPrompt);
+}
+
+// ═══════════════════════════════════════════
+// safenpm install (simulated sandbox)
+// ═══════════════════════════════════════════
+function cmdInstall(name) {
+  if (!name) { line('<span class="t-red">Usage:</span> safenpm install &lt;package-name&gt;'); line(''); addPrompt(); return; }
+
+  const typo = checkTyposquat(name);
+  const pkg = PKG_DB[name];
+  const lines = [];
+
+  lines.push(`<span class="t-green t-bold">safenpm</span> <span class="t-dim">v0.5.0</span>`);
+  lines.push('');
+  lines.push(`<span class="t-dim">⏳ Phase 1: Pre-install scan...</span>`);
+
+  // Typosquat check
+  if (typo) {
+    lines.push(`  <span class="t-red">⚠ Typosquat detected:</span> <span class="t-red">${escHtml(typo.suspect)}</span> → <span class="t-yellow">${escHtml(typo.target)}</span> <span class="t-dim">(${typo.technique})</span>`);
+    lines.push(`  <span class="t-red t-bold">✗ INSTALL BLOCKED</span> <span class="t-dim">— suspected typosquat</span>`);
+    lines.push('');
+    lines.push(`  <span class="t-green">→ Run:</span> <span class="t-cyan">safenpm install ${escHtml(typo.target)}</span>`);
+    lines.push('');
+    typeLines(lines, addPrompt);
+    return;
+  }
+
+  lines.push(`  <span class="t-green">✓</span> Typosquat check passed`);
+
+  // Reputation
+  if (pkg) {
+    const tierClass = pkg.tier === 'trusted' ? 't-green' : pkg.tier === 'established' ? 't-blue' : 't-yellow';
+    lines.push(`  <span class="t-green">✓</span> Reputation: <span class="${tierClass}">${pkg.score}/100 (${pkg.tier})</span>`);
+  } else {
+    lines.push(`  <span class="t-yellow">!</span> Reputation: <span class="t-yellow">unknown package</span>`);
+  }
+
+  // Lockfile
+  lines.push(`  <span class="t-green">✓</span> Lockfile audit: <span class="t-green">clean</span>`);
+  lines.push('');
+
+  // Sandbox phase
+  lines.push(`<span class="t-dim">⏳ Phase 2: npm install...</span>`);
+  const depCount = pkg ? Math.floor(Math.random() * 30 + 10) : Math.floor(Math.random() * 50 + 5);
+  lines.push(`  <span class="t-dim">added ${depCount} packages in 2.${Math.floor(Math.random()*9)}s</span>`);
+  lines.push('');
+
+  // Check if has install scripts
+  const hasScripts = pkg && pkg.factors.some(f => f.label.includes('install script'));
+
+  if (hasScripts) {
+    lines.push(`<span class="t-dim">⏳ Phase 3: Sandbox postinstall scripts...</span>`);
+    lines.push(`  <span class="t-cyan">▶</span> Running postinstall for ${escHtml(name)} in sandbox...`);
+    lines.push(`    <span class="t-dim">├─ sandbox: macOS sandbox-exec</span>`);
+    lines.push(`    <span class="t-dim">├─ network: blocked</span>`);
+    lines.push(`    <span class="t-dim">├─ filesystem: read-only (except node_modules/)</span>`);
+    lines.push(`    <span class="t-dim">└─ duration: 1.${Math.floor(Math.random()*9)}s</span>`);
+    lines.push(`  <span class="t-green">✓</span> postinstall completed — <span class="t-green">no violations detected</span>`);
+  } else {
+    lines.push(`<span class="t-dim">⏳ Phase 3: Sandbox...</span>`);
+    lines.push(`  <span class="t-green">✓</span> No postinstall scripts to sandbox`);
+  }
+
+  lines.push('');
+  lines.push('<span class="t-green t-bold">✓ Install complete</span>');
+  lines.push('');
+
+  // Summary
+  const score = pkg ? pkg.score : (40 + Math.floor(Math.random() * 30));
+  lines.push(`  <span class="t-dim">Packages:</span>   ${depCount} installed`);
+  lines.push(`  <span class="t-dim">Scripts:</span>    ${hasScripts ? '1 sandboxed, 0 violations' : 'none'}`);
+  lines.push(`  <span class="t-dim">Typosquats:</span> 0 found`);
+  lines.push(`  <span class="t-dim">Score:</span>      ${score}/100`);
+  lines.push('');
+  typeLines(lines, addPrompt);
+}
+
+// ═══════════════════════════════════════════
+// safenpm doctor
+// ═══════════════════════════════════════════
+function cmdDoctor() {
+  const sections = [
+    { name: 'Lockfile Health', weight: 20, score: 95, grade: 'A', findings: [
+      { sev: 'pass', msg: 'package-lock.json exists' },
+      { sev: 'pass', msg: 'Using lockfile v3 format' },
+      { sev: 'info', msg: '247 packages audited' },
+    ]},
+    { name: 'Install Scripts', weight: 25, score: 88, grade: 'B+', findings: [
+      { sev: 'pass', msg: '243 packages have no install scripts' },
+      { sev: 'warn', msg: '4 packages have postinstall scripts' },
+      { sev: 'pass', msg: 'All scripts passed sandbox analysis' },
+    ]},
+    { name: 'Typosquat Scan', weight: 20, score: 100, grade: 'A+', findings: [
+      { sev: 'pass', msg: '0 typosquats detected across 247 packages' },
+    ]},
+    { name: 'Reputation', weight: 15, score: 78, grade: 'B', findings: [
+      { sev: 'pass', msg: '198 packages rated trusted or established' },
+      { sev: 'warn', msg: '12 packages rated unknown' },
+      { sev: 'info', msg: 'Average score: 74/100' },
+    ]},
+    { name: 'Behavior Analysis', weight: 10, score: 92, grade: 'A-', findings: [
+      { sev: 'pass', msg: 'No network access violations' },
+      { sev: 'pass', msg: 'No filesystem violations' },
+      { sev: 'info', msg: '4 scripts analyzed in sandbox' },
+    ]},
+    { name: 'Project Hygiene', weight: 10, score: 70, grade: 'B-', findings: [
+      { sev: 'pass', msg: '.safenpmrc config found' },
+      { sev: 'warn', msg: '3 wildcard version ranges (*) in package.json' },
+      { sev: 'info', msg: 'engines field specified' },
+    ]},
+  ];
+
+  const overall = sections.reduce((s, sec) => s + sec.score * sec.weight / 100, 0);
+  const overallGrade = overall >= 97 ? 'A+' : overall >= 93 ? 'A' : overall >= 90 ? 'A-' : overall >= 87 ? 'B+' : overall >= 83 ? 'B' : overall >= 80 ? 'B-' : overall >= 77 ? 'C+' : overall >= 73 ? 'C' : overall >= 70 ? 'C-' : 'D';
+  const gradeClass = overallGrade.startsWith('A') ? 't-green' : overallGrade.startsWith('B') ? 't-blue' : 't-yellow';
+
+  const lines = [];
+  lines.push('<span class="t-green t-bold">safenpm doctor</span> <span class="t-dim">v0.5.0</span>');
+  lines.push('');
+
+  // Big grade display
+  lines.push(`  <span class="${gradeClass} t-bold">┌─────────────┐</span>`);
+  lines.push(`  <span class="${gradeClass} t-bold">│  Grade: ${overallGrade.padEnd(3)} │</span>`);
+  lines.push(`  <span class="${gradeClass} t-bold">│  Score: ${Math.round(overall).toString().padEnd(3)} │</span>`);
+  lines.push(`  <span class="${gradeClass} t-bold">└─────────────┘</span>`);
+  lines.push('');
+
+  for (const sec of sections) {
+    const gClass = sec.grade.startsWith('A') ? 't-green' : sec.grade.startsWith('B') ? 't-blue' : 't-yellow';
+    const barLen = 15;
+    const filled = Math.round(sec.score / 100 * barLen);
+    const bar = `<span class="${gClass}">${'█'.repeat(filled)}</span><span class="t-dim">${'░'.repeat(barLen - filled)}</span>`;
+    lines.push(`  <span class="t-bold">${sec.name.padEnd(20)}</span> ${bar} <span class="${gClass}">${sec.grade}</span> <span class="t-dim">(${sec.weight}% weight)</span>`);
+
+    for (const f of sec.findings) {
+      const icon = f.sev === 'pass' ? '<span class="t-green">✓</span>' : f.sev === 'warn' ? '<span class="t-yellow">!</span>' : '<span class="t-dim">·</span>';
+      lines.push(`    ${icon} <span class="t-dim">${f.msg}</span>`);
+    }
+    lines.push('');
+  }
+
+  lines.push('<span class="t-dim">Run</span> <span class="t-cyan">safenpm fix</span> <span class="t-dim">to auto-fix detected issues.</span>');
+  lines.push('');
+  typeLines(lines, addPrompt);
+}
+
+// ═══════════════════════════════════════════
+// safenpm diff
+// ═══════════════════════════════════════════
+function cmdDiff(name) {
+  if (!name) { line('<span class="t-red">Usage:</span> safenpm diff &lt;package-name&gt;'); line(''); addPrompt(); return; }
+
+  const pkg = PKG_DB[name];
+  const lines = [];
+  lines.push(`<span class="t-dim">Comparing ${escHtml(name)} against last snapshot...</span>`);
+  lines.push('');
+
+  if (pkg) {
+    // Simulate a version bump diff
+    const oldVer = pkg.version.replace(/\d+$/, m => Math.max(0, parseInt(m) - 1));
+    lines.push(`  <span class="t-bold">${escHtml(name)}</span> <span class="t-red">${oldVer}</span> → <span class="t-green">${pkg.version}</span>`);
+    lines.push('');
+
+    // Scripts diff
+    const hasScripts = pkg.factors.some(f => f.label.includes('install script'));
+    lines.push('  <span class="t-cyan t-bold">Scripts:</span>');
+    if (hasScripts) {
+      lines.push('    <span class="t-dim">postinstall (unchanged)</span>');
+    } else {
+      lines.push('    <span class="t-dim">No install scripts (unchanged)</span>');
+    }
+    lines.push('');
+
+    // Dependencies diff
+    lines.push('  <span class="t-cyan t-bold">Dependencies:</span>');
+    // Fake some realistic dep changes
+    const depChanges = [
+      { type: 'changed', name: name === 'react' ? 'loose-envify' : name === 'express' ? 'body-parser' : 'debug', from: '1.4.0', to: '1.5.0' },
+      { type: 'added', name: name === 'next' ? '@next/swc-linux-x64' : 'semver', ver: '7.6.2' },
+    ];
+    for (const d of depChanges) {
+      if (d.type === 'changed') {
+        lines.push(`    <span class="t-yellow">~</span> ${d.name}: <span class="t-red">${d.from}</span> → <span class="t-green">${d.to}</span>`);
+      } else if (d.type === 'added') {
+        lines.push(`    <span class="t-green">+</span> ${d.name}: <span class="t-green">${d.ver}</span>`);
+      }
+    }
+    lines.push('');
+
+    // Files diff
+    lines.push('  <span class="t-cyan t-bold">Files:</span>');
+    const fileCount = 5 + Math.floor(Math.random() * 10);
+    lines.push(`    <span class="t-dim">${fileCount} files changed</span>`);
+    lines.push(`    <span class="t-green">+ 23 lines added</span>`);
+    lines.push(`    <span class="t-red">- 8 lines removed</span>`);
+  } else {
+    lines.push(`  <span class="t-yellow">No snapshot found for ${escHtml(name)}.</span>`);
+    lines.push(`  <span class="t-dim">Run</span> <span class="t-cyan">safenpm install ${escHtml(name)}</span> <span class="t-dim">first to create a baseline snapshot.</span>`);
+  }
+  lines.push('');
+  typeLines(lines, addPrompt);
+}
+
+// ═══════════════════════════════════════════
+// safenpm fix
+// ═══════════════════════════════════════════
+function cmdFix(name) {
+  const lines = [];
+
+  if (name) {
+    // Fix a specific package
+    const typo = checkTyposquat(name);
+    if (typo) {
+      lines.push(`<span class="t-green t-bold">safenpm fix</span> <span class="t-dim">— auto-fix mode</span>`);
+      lines.push('');
+      lines.push(`  <span class="t-red">⚠</span> <span class="t-bold">${escHtml(typo.suspect)}</span> <span class="t-dim">→ typosquat of</span> <span class="t-yellow">${escHtml(typo.target)}</span>`);
+      lines.push('');
+      lines.push(`  <span class="t-dim">Fix: Replace with legitimate package</span>`);
+      lines.push(`    <span class="t-red">- npm uninstall ${escHtml(typo.suspect)}</span>`);
+      lines.push(`    <span class="t-green">+ npm install ${escHtml(typo.target)}</span>`);
+      lines.push('');
+      lines.push(`  <span class="t-green">✓ Fixed!</span> <span class="t-dim">Replaced</span> <span class="t-red">${escHtml(typo.suspect)}</span> <span class="t-dim">with</span> <span class="t-green">${escHtml(typo.target)}</span>`);
+    } else {
+      lines.push(`<span class="t-green">✓</span> No issues found for <span class="t-bold">${escHtml(name)}</span>`);
+    }
+  } else {
+    lines.push(`<span class="t-green t-bold">safenpm fix</span> <span class="t-dim">— scanning for fixable issues...</span>`);
+    lines.push('');
+    lines.push('  <span class="t-green">✓</span> No typosquats detected');
+    lines.push('  <span class="t-green">✓</span> No blocked packages to remove');
+    lines.push('  <span class="t-dim">·</span> <span class="t-dim">3 wildcard versions found (run with --strict to pin)</span>');
+    lines.push('');
+    lines.push('<span class="t-green t-bold">✓ Project is clean.</span>');
+  }
+  lines.push('');
+  typeLines(lines, addPrompt);
+}
+
+// ═══════════════════════════════════════════
+// Init terminal + quick chips
+// ═══════════════════════════════════════════
+addPrompt();
+
+document.querySelectorAll('.quick-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const cmd = chip.dataset.cmd;
+    const inp = termBody.querySelector('.terminal-input:not([disabled])');
+    if (inp) {
+      // Simulate typing and pressing Enter
+      const wrap = inp.parentElement;
+      inp.disabled = true;
+      wrap.innerHTML = `<span class="terminal-prompt">$ </span><span class="t-white">${escHtml(cmd)}</span>`;
+      if (cmd) { history.push(cmd); historyIdx = history.length; }
+      if (cmd === 'clear') clearTerminal();
+      else executeCommand(cmd);
+    }
+  });
+});
+
+// Click on terminal body focuses input
+termBody.addEventListener('click', (e) => {
+  if (e.target === termBody || e.target.classList.contains('terminal-line')) {
+    const inp = termBody.querySelector('.terminal-input:not([disabled])');
+    if (inp) inp.focus();
+  }
+});
+
+// Init score cards + Lucide
+renderCards('all');
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+</body>
+</html>

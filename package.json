@@ -1,0 +1,27 @@
+{
+  "name": "safenpm",
+  "version": "0.5.0",
+  "description": "npm wrapper that sandboxes postinstall scripts, blocks network access, and reports suspicious behavior",
+  "keywords": ["npm", "security", "sandbox", "supply-chain", "postinstall"],
+  "license": "MIT",
+  "bin": {
+    "safenpm": "./dist/cli.js"
+  },
+  "files": [
+    "dist/**/*.js",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "bash test/run-tests.sh"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
