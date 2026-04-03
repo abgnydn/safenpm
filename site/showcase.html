@@ -186,7 +186,7 @@
     .stat-icon i[data-lucide] { width: 24px; height: 24px; color: var(--accent); }
 
     /* Filter tab icons */
-    .filter-tab i[data-lucide] { width: 14px; height: 14px; margin-right: 4px; vertical-align: -2px; }
+    .filter-tab i[data-lucide] { width: 14px; height: 14px; }
 
     /* Try section icons */
     .try-btn i[data-lucide] { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
@@ -368,6 +368,7 @@
       background: rgba(255,255,255,0.04); border: 1px solid transparent;
       font-size: 13px; font-weight: 500; color: var(--text-dim);
       cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
     }
     .filter-tab:hover { color: var(--text); background: rgba(255,255,255,0.06); }
     .filter-tab.active {
