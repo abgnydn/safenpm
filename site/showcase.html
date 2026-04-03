@@ -507,11 +507,20 @@
     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input type="text" class="search-input" id="searchInput" placeholder="Search packages..." autocomplete="off" spellcheck="false">
   </div>
-  <div class="filter-tabs">
-    <button class="filter-tab active" data-filter="all"><i data-lucide="list"></i> All <span class="tab-count">100</span></button>
-    <button class="filter-tab" data-filter="trusted"><i data-lucide="shield"></i> Trusted <span class="tab-count">51</span></button>
-    <button class="filter-tab" data-filter="established"><i data-lucide="check-circle-2"></i> Established <span class="tab-count">41</span></button>
-    <button class="filter-tab" data-filter="emerging"><i data-lucide="eye"></i> Emerging <span class="tab-count">8</span></button>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div class="filter-tabs" style="margin-bottom:0;">
+      <button class="filter-tab active" data-filter="all"><i data-lucide="list"></i> All <span class="tab-count">100</span></button>
+      <button class="filter-tab" data-filter="trusted"><i data-lucide="shield"></i> Trusted <span class="tab-count">51</span></button>
+      <button class="filter-tab" data-filter="established"><i data-lucide="check-circle-2"></i> Established <span class="tab-count">41</span></button>
+      <button class="filter-tab" data-filter="emerging"><i data-lucide="eye"></i> Emerging <span class="tab-count">8</span></button>
+    </div>
+    <select id="sortSelect" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;outline:none;">
+      <option value="default">Sort: Default</option>
+      <option value="score-desc">Score: High → Low</option>
+      <option value="score-asc">Score: Low → High</option>
+      <option value="name-asc">Name: A → Z</option>
+      <option value="downloads-desc">Downloads: Most first</option>
+    </select>
   </div>
   <div class="result-count" id="resultCount"></div>
 </div>
@@ -1817,8 +1826,17 @@ function barColor(score) {
 
 let currentFilter = 'all';
 let currentSearch = '';
+let currentSort = 'default';
 let currentPage = 1;
 const PER_PAGE = 12;
+
+function parseDownloads(str) {
+  if (!str) return 0;
+  const n = parseFloat(str);
+  if (str.includes('M')) return n * 1000000;
+  if (str.includes('K')) return n * 1000;
+  return n;
+}
 
 function renderCards(filter, search, page) {
   if (filter) currentFilter = filter;
@@ -1836,6 +1854,12 @@ function renderCards(filter, search, page) {
       p.factors.some(f => f.label.toLowerCase().includes(currentSearch))
     );
   }
+
+  // Sort
+  if (currentSort === 'score-desc') filtered.sort((a, b) => b.score - a.score);
+  else if (currentSort === 'score-asc') filtered.sort((a, b) => a.score - b.score);
+  else if (currentSort === 'name-asc') filtered.sort((a, b) => a.name.localeCompare(b.name));
+  else if (currentSort === 'downloads-desc') filtered.sort((a, b) => parseDownloads(b.downloads) - parseDownloads(a.downloads));
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   if (currentPage > totalPages) currentPage = totalPages || 1;
@@ -1953,6 +1977,11 @@ document.querySelectorAll('.filter-tab').forEach(tab => {
 // Search
 document.getElementById('searchInput').addEventListener('input', (e) => {
   renderCards(undefined, e.target.value);
+});
+
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+  currentSort = e.target.value;
+  renderCards();
 });
 
 // ═══════════════════════════════════════════
