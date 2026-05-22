@@ -20,25 +20,39 @@
     "url": "https://github.com/abgnydn/safenpm/issues"
   },
   "bin": {
-    "safenpm": "./dist/cli.js"
+    "safenpm": "./dist/cli/index.js"
   },
   "files": [
     "dist/**/*.js",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "test": "bash test/run-tests.sh"
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run build && npm run test:unit && bash test/golden/capture.sh --check",
+    "test": "npm run test:unit && npm run test:integration && npm run test:golden",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "bash test/run-tests.sh",
+    "test:golden": "npm run build && bash test/golden/capture.sh --check",
+    "test:golden:update": "npm run build && bash test/golden/capture.sh",
+    "render:og": "node scripts/render-og.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260422.1",
     "@types/node": "^20.0.0",
-    "@vercel/node": "^5.6.24",
+    "@vitest/coverage-v8": "^4.1.7",
     "sharp": "^0.34.5",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.7"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0"

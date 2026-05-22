@@ -1,0 +1,37 @@
+{
+  "typosquats": [
+    {
+      "suspect": "axois",
+      "target": "axios",
+      "technique": "char-swap",
+      "confidence": "high"
+    },
+    {
+      "suspect": "expresss",
+      "target": "express",
+      "technique": "edit-distance-1",
+      "confidence": "high"
+    },
+    {
+      "suspect": "lodahs",
+      "target": "lodash",
+      "technique": "char-swap",
+      "confidence": "high"
+    }
+  ],
+  "lockfile": {
+    "exists": false,
+    "format": null,
+    "score": 50,
+    "issues": 1
+  },
+  "reputation": {
+    "overallScore": 30,
+    "totalPackages": 3,
+    "tiers": {
+      "unknown": 3
+    }
+  },
+  "npmAudit": null
+}
+EXITCODE:0

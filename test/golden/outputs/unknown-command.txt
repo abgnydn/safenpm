@@ -1,0 +1,3 @@
+  unknown command: not-a-command
+  run safenpm --help for usage
+EXITCODE:1

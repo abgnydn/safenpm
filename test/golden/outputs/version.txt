@@ -1,0 +1,2 @@
+safenpm 0.1.0
+EXITCODE:0

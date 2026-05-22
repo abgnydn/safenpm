@@ -1,0 +1,64 @@
+/**
+ * Version + help output. The exact string is part of the released
+ * CLI contract: the bash integration suite asserts `safenpm --version`
+ * is literally `safenpm 0.1.0`, and golden tests compare the full help
+ * block.
+ */
+export const VERSION_STRING = 'safenpm 0.1.0'
+
+export const HELP_TEXT = `
+  safenpm — sandboxed npm installs
+
+  usage:
+    safenpm install [packages...] [options]
+    safenpm i [packages...] [options]
+    safenpm doctor [--json]
+    safenpm fix [--dry-run] [--json]
+    safenpm diff [--snapshot] [--json]
+    safenpm scan [--json]
+    safenpm audit [--json]
+    safenpm trace [--json] -- <command> [args...]
+    safenpm trace --diff [--json]
+    safenpm trace --list [--json]
+
+  options:
+    --dry-run, -n         show what would be sandboxed/fixed without running
+    --allow <pkg,...>     skip sandboxing for trusted packages
+    --json                machine-readable JSON output (for CI)
+    --interactive, -I     prompt on each blocked package: retry / skip / abort
+    --loose               network-only sandbox (no filesystem restrictions)
+    --scan, -S            enable deep scan (typosquat, diffing, intel, lockfile, reputation)
+    --no-report           disable anonymous signal reporting
+
+  commands:
+    install / i           install packages with sandboxing
+    scan                  standalone deep scan (no install)
+    audit                 view recent safenpm run history
+
+  commands (experimental, may change before 1.0):
+    doctor                health report card with letter grade + actionable fixes
+    fix                   auto-fix typosquats and remove malicious packages
+    diff                  show what changed in dependencies since last snapshot
+    diff --snapshot       save current state as baseline for future diffs
+    trace -- <cmd>        run <cmd> and record which Node builtins / packages
+                          each dependency reaches for at runtime (observe-only)
+    trace --diff          compare the two most recent traces; exit 1 if any
+                          new critical builtin (child_process/https/net/...)
+                          appeared in a previously-clean package
+    trace --list          list recent traces in ~/.safenpm/pkg-traces/
+
+  examples:
+    safenpm install axios
+    safenpm i --scan                         (full security scan)
+    safenpm doctor                           (project health grade)
+    safenpm doctor --json                    (CI-friendly health check)
+    safenpm fix --dry-run                    (preview auto-fixes)
+    safenpm fix                              (apply fixes)
+    safenpm diff --snapshot                  (save baseline)
+    safenpm diff                             (show changes since baseline)
+    safenpm i --allow bcrypt,sharp           (trust specific packages)
+    safenpm i --interactive                  (prompt on blocks)
+    safenpm i --json                         (CI-friendly output)
+    safenpm scan --json                      (analysis only)
+    safenpm audit                            (view recent runs)
+      `

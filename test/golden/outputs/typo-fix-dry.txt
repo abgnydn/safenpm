@@ -1,0 +1,14 @@
+
+[1m  safenpm[0m [2m— sandboxed installs[0m
+
+
+[36m  →[0m scanning for fixable issues...
+
+[36m  →[0m 3 fixes available:
+
+  [36m→[0m [31maxois[0m → [32maxios[0m [2m(typosquat)[0m
+  [36m→[0m [31mexpresss[0m → [32mexpress[0m [2m(typosquat)[0m
+  [36m→[0m [31mlodahs[0m → [32mlodash[0m [2m(typosquat)[0m
+
+[2m  run `safenpm fix` without --dry-run to apply[0m
+EXITCODE:0

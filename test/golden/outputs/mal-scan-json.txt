@@ -1,0 +1,20 @@
+{
+  "typosquats": [],
+  "lockfile": {
+    "exists": false,
+    "format": null,
+    "score": 50,
+    "issues": 1
+  },
+  "reputation": {
+    "overallScore": 24,
+    "totalPackages": 3,
+    "tiers": {
+      "unknown": 1,
+      "established": 1,
+      "risky": 1
+    }
+  },
+  "npmAudit": null
+}
+EXITCODE:0

@@ -7,6 +7,7 @@
   <meta name="description" content="Privacy policy for safenpm — what data we collect, why, and how it's handled.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -103,9 +104,31 @@
       .content { padding: 100px 0 60px; }
       .nav-links { display: none; }
     }
+
+    /* Accessibility: skip-link, focus styles, motion guard. */
+    .skip-link {
+      position: absolute; top: -40px; left: 8px;
+      padding: 8px 12px; background: var(--accent); color: var(--bg);
+      font-weight: 600; border-radius: 4px;
+      z-index: 1000;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: 8px; outline: none; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
   </style>
 </head>
 <body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
 
 <nav>
   <div class="container">
@@ -119,6 +142,8 @@
     </div>
   </div>
 </nav>
+
+<main id="main" tabindex="-1">
 
 <div class="content">
   <div class="container">
@@ -156,14 +181,7 @@
     </ul>
 
     <h2>3. Website Analytics</h2>
-    <p>The safenpm.dev website uses <a href="https://vercel.com/analytics">Vercel Analytics</a> and <a href="https://vercel.com/docs/speed-insights">Vercel Speed Insights</a>. These collect:</p>
-    <ul>
-      <li>Page views and referrer URLs</li>
-      <li>Anonymous performance metrics (page load times)</li>
-      <li>Country-level geolocation (no city or IP stored)</li>
-      <li>Browser and device type</li>
-    </ul>
-    <p>Vercel Analytics is privacy-focused — it does not use cookies and does not track users across sites. See <a href="https://vercel.com/docs/analytics/privacy-policy">Vercel's privacy policy</a> for details.</p>
+    <p>The safenpm.dev website runs no client-side analytics or telemetry. Standard access logs kept by our host (Cloudflare Pages) may record page views, referrer URLs, and aggregate country/device data, but no user-identifying profile is built or retained.</p>
 
     <h2>4. Cookies</h2>
     <p>safenpm.dev does not set any cookies.</p>
@@ -171,7 +189,7 @@
     <h2>5. Third Parties</h2>
     <p>We do not sell, share, or provide any data to third parties. The only external services involved are:</p>
     <ul>
-      <li><strong>Vercel</strong> — hosting and analytics</li>
+      <li><strong>Cloudflare Pages</strong> — static hosting and API functions</li>
       <li><strong>Upstash</strong> — threat signal storage (stores only anonymous signal data)</li>
     </ul>
 
@@ -193,9 +211,11 @@
   </div>
 </div>
 
+</main>
+
 <footer>
   <div class="container">
-    <p>safenpm v1.0.0 &middot; MIT License</p>
+    <p>safenpm v0.1.0 &middot; MIT License</p>
   </div>
 </footer>
 

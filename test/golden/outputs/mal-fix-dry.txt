@@ -1,0 +1,8 @@
+
+[1m  safenpm[0m [2m— sandboxed installs[0m
+
+
+[36m  →[0m scanning for fixable issues...
+
+[32m  ✓[0m no fixable issues found
+EXITCODE:0

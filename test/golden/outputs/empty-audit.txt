@@ -1,0 +1,3 @@
+  no audit entries found
+  run safenpm install to generate audit data
+EXITCODE:0

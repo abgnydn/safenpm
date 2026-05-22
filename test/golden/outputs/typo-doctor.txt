@@ -1,0 +1,39 @@
+
+[1m  safenpm[0m [2m— sandboxed installs[0m
+
+
+[36m  →[0m running health check...
+
+  [31m[1mGrade: F[0m  [2m(54/100)[0m
+  [2m2 critical issues found. Review the recommendations below.[0m
+
+  [31m✕[0m [1mLockfile[0m [2m20/100[0m
+  [31m  ✕[0m No package-lock.json found
+      [36mfix:[0m [2mRun `npm install` to generate a lockfile for deterministic builds[0m
+
+  [32m✓[0m [1mInstall Scripts[0m [2m100/100[0m
+  [32m  ✓[0m No install scripts found
+
+  [31m✕[0m [1mTyposquats[0m [2m10/100[0m
+  [31m  ✕[0m axois looks like axios (char-swap)
+      [36mfix:[0m [2mRun `safenpm fix` to replace with axios, or `npm uninstall axois`[0m
+  [31m  ✕[0m expresss looks like express (edit-distance-1)
+      [36mfix:[0m [2mRun `safenpm fix` to replace with express, or `npm uninstall expresss`[0m
+  [31m  ✕[0m lodahs looks like lodash (char-swap)
+      [36mfix:[0m [2mRun `safenpm fix` to replace with lodash, or `npm uninstall lodahs`[0m
+
+  [33m![0m [1mReputation[0m [2m30/100[0m
+  [32m  ✓[0m 3 packages, overall 30/100
+
+  [32m✓[0m [1mBehavior[0m [2m100/100[0m
+  [32m  ✓[0m No install scripts to diff
+
+  [32m✓[0m [1mProject Hygiene[0m [2m85/100[0m
+  [2m  ·[0m No .safenpmrc file — consider creating one to allowlist trusted native packages
+      [36mfix:[0m [2mCreate .safenpmrc with packages like bcrypt, sharp that need install scripts[0m
+  [2m  ·[0m No engines field — consider specifying a Node.js version
+      [36mfix:[0m [2mAdd `"engines": {"node": ">=18"}` to package.json[0m
+
+  [36m→[0m 3 auto-fixable issues found
+  [2mrun `safenpm fix` to apply, or `safenpm fix --dry-run` to preview[0m
+EXITCODE:1

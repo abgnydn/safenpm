@@ -1,0 +1,324 @@
+/**
+ * Terminal renderer. ANSI codes, section headers, the works.
+ *
+ * This file is the authoritative source of every byte safenpm prints
+ * in non-JSON mode. The `test/golden/` snapshots pin every emit here —
+ * any change to spacing, casing, or punctuation will fail the gate.
+ */
+import { type AnalysisResult, riskLevel } from '../analysis/analyzer'
+import type { DiffResult } from '../analysis/diffing'
+import type { LockfileAuditResult } from '../analysis/lockfile'
+import type { NpmAuditResult } from '../analysis/npm-audit'
+import type { ReputationSummary } from '../analysis/reputation'
+import type { TyposquatResult } from '../analysis/typosquat'
+import type { MaintainerInfo } from '../network/maintainer'
+import type { ThreatIntelResult } from '../network/threatintel'
+import type { Reporter } from './reporter'
+
+const RESET = '\x1b[0m'
+const DIM = '\x1b[2m'
+const BOLD = '\x1b[1m'
+const RED = '\x1b[31m'
+const GREEN = '\x1b[32m'
+const YELLOW = '\x1b[33m'
+const CYAN = '\x1b[36m'
+const BLUE = '\x1b[34m'
+const MAGENTA = '\x1b[35m'
+
+function timeSince(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
+export function createHumanReporter(): Reporter {
+  return {
+    // banners -------------------------------------------------------
+    banner() {
+      console.log()
+      console.log(`${BOLD}  safenpm${RESET} ${DIM}— sandboxed installs${RESET}`)
+      console.log()
+    },
+    dryRunBanner() {
+      console.log()
+      console.log(`${BOLD}  safenpm${RESET} ${DIM}— dry run (no scripts will be executed)${RESET}`)
+      console.log()
+    },
+
+    // env metadata --------------------------------------------------
+    backendInfo(name) {
+      console.log(`${DIM}  sandbox: ${name}${RESET}`)
+    },
+    allowlistInfo(count) {
+      if (count > 0) {
+        console.log(`${DIM}  allowlist: ${count} package${count !== 1 ? 's' : ''} whitelisted${RESET}`)
+      }
+    },
+    auditInfo() {
+      console.log(`${DIM}  audit log: ~/.safenpm/audit.log${RESET}`)
+    },
+
+    // micro-events --------------------------------------------------
+    info(msg) {
+      console.log(`${DIM}  ${msg}${RESET}`)
+    },
+    step(msg) {
+      console.log(`${CYAN}  →${RESET} ${msg}`)
+    },
+    success(msg) {
+      console.log(`${GREEN}  ✓${RESET} ${msg}`)
+    },
+    warn(msg) {
+      console.log(`${YELLOW}  ⚠${RESET}  ${msg}`)
+    },
+    error(msg) {
+      console.log(`${RED}  ✕${RESET} ${msg}`)
+    },
+    blank() {
+      console.log()
+    },
+
+    // per-package outcomes -----------------------------------------
+    allowed(name, version) {
+      console.log(`${GREEN}  ✓ clean${RESET}   ${name}@${version}`)
+    },
+    blocked(name, version, hook, reason = 'network') {
+      console.log()
+      console.log(`${RED}  ✕ blocked${RESET}  ${BOLD}${name}@${version}${RESET}`)
+      console.log(`${DIM}    hook:   ${hook}${RESET}`)
+      const reasonText = reason === 'network'
+        ? 'attempted network access during install'
+        : reason === 'filesystem'
+          ? 'attempted to access restricted files'
+          : `script exited with error (${reason})`
+      console.log(`${DIM}    reason: ${reasonText}${RESET}`)
+      console.log(`${DIM}    signal: reported anonymously to safenpm network${RESET}`)
+      console.log()
+    },
+    skipped(name, version) {
+      console.log(`${BLUE}  ↳ allow${RESET}   ${name}@${version} ${DIM}(allowlisted)${RESET}`)
+    },
+    dryRunItem(name, version, hook, script, isAllowed) {
+      const status = isAllowed ? `${BLUE}allow${RESET}` : `${YELLOW}sandbox${RESET}`
+      console.log(`  ${status}  ${BOLD}${name}@${version}${RESET}`)
+      console.log(`${DIM}          [${hook}] ${script}${RESET}`)
+    },
+
+    // section headers + result renderers (1:1 with the v1 logger) -
+    typosquatHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} typosquat detection...`)
+      console.log()
+    },
+    typosquatResult(r) {
+      const color = r.confidence === 'high' ? RED : r.confidence === 'medium' ? YELLOW : BLUE
+      const icon = r.confidence === 'high' ? '⚠' : r.confidence === 'medium' ? '!' : '?'
+      console.log(`  ${color}${icon}${RESET} ${BOLD}${r.suspect}${RESET} → looks like ${CYAN}${r.target}${RESET}`)
+      console.log(`    ${DIM}technique: ${r.technique}  distance: ${r.distance}  confidence: ${r.confidence}${RESET}`)
+    },
+
+    lockfileHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} lockfile integrity audit...`)
+      console.log()
+    },
+    lockfileResult(result) {
+      if (!result.exists) {
+        console.log(`  ${YELLOW}!${RESET} no package-lock.json found`)
+        return
+      }
+      const color = result.score >= 80 ? GREEN : result.score >= 50 ? YELLOW : RED
+      console.log(`  ${color}score: ${result.score}/100${RESET} ${DIM}(${result.totalPackages} packages, ${result.format})${RESET}`)
+
+      const significant = result.issues.filter((i) => i.severity === 'high' || i.severity === 'medium')
+      for (const issue of significant.slice(0, 5)) {
+        const iColor = issue.severity === 'high' ? RED : YELLOW
+        console.log(`    ${iColor}${issue.severity.toUpperCase().padEnd(6)}${RESET} ${issue.package}: ${issue.detail}`)
+      }
+      if (significant.length > 5) {
+        console.log(`    ${DIM}...and ${significant.length - 5} more${RESET}`)
+      }
+    },
+
+    reputationHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} dependency reputation scoring...`)
+      console.log()
+    },
+    reputationResult(summary) {
+      const color = summary.overallScore >= 70 ? GREEN : summary.overallScore >= 40 ? YELLOW : RED
+      console.log(`  ${color}overall: ${summary.overallScore}/100${RESET} ${DIM}(${summary.totalPackages} packages, avg ${summary.averageScore})${RESET}`)
+
+      const tierLine = Object.entries(summary.tiers)
+        .map(([tier, count]) => {
+          const c = tier === 'trusted' ? GREEN : tier === 'established' ? BLUE : tier === 'risky' ? RED : DIM
+          return `${c}${count} ${tier}${RESET}`
+        })
+        .join(', ')
+      if (tierLine) console.log(`  ${DIM}tiers:${RESET} ${tierLine}`)
+
+      if (summary.riskiest.length > 0 && summary.riskiest[0]!.score < 40) {
+        console.log(`  ${DIM}riskiest:${RESET}`)
+        for (const r of summary.riskiest.slice(0, 3)) {
+          if (r.score < 40) {
+            console.log(`    ${RED}${r.score}${RESET} ${r.name}@${r.version} ${DIM}(${r.tier})${RESET}`)
+          }
+        }
+      }
+    },
+
+    npmAuditHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} npm audit (registry CVE advisories)...`)
+      console.log()
+    },
+    npmAuditResult(result) {
+      if (!result.ran) {
+        console.log(`  ${DIM}npm audit unavailable (no network, missing npm, or unsupported project)${RESET}`)
+        return
+      }
+      if (result.total === 0) {
+        console.log(`  ${GREEN}no known advisories${RESET}`)
+        return
+      }
+      const t = result.totals
+      const parts: string[] = []
+      if (t.critical > 0) parts.push(`${RED}${t.critical} critical${RESET}`)
+      if (t.high > 0)     parts.push(`${RED}${t.high} high${RESET}`)
+      if (t.moderate > 0) parts.push(`${YELLOW}${t.moderate} moderate${RESET}`)
+      if (t.low > 0)      parts.push(`${BLUE}${t.low} low${RESET}`)
+      if (t.info > 0)     parts.push(`${DIM}${t.info} info${RESET}`)
+      console.log(`  ${BOLD}${result.total} advisor${result.total === 1 ? 'y' : 'ies'}${RESET} ${DIM}(${parts.join(', ')})${RESET}`)
+
+      for (const v of result.vulnerabilities.slice(0, 5)) {
+        const sevColor = v.severity === 'critical' || v.severity === 'high'
+          ? RED
+          : v.severity === 'moderate' ? YELLOW
+          : v.severity === 'low' ? BLUE : DIM
+        const fix = v.fixAvailable ? `${GREEN}fix available${RESET}` : `${DIM}no fix available${RESET}`
+        console.log(`    ${sevColor}${v.severity.toUpperCase().padEnd(8)}${RESET} ${BOLD}${v.name}${RESET} ${DIM}${v.range}${RESET}  ${fix}`)
+      }
+      if (result.vulnerabilities.length > 5) {
+        console.log(`    ${DIM}...and ${result.vulnerabilities.length - 5} more — run \`npm audit\` for the full list${RESET}`)
+      }
+    },
+
+    analysisHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} static analysis of install scripts...`)
+      console.log()
+    },
+    analysisResult(result) {
+      const level = riskLevel(result.riskScore)
+      const color = level === 'critical' ? RED
+        : level === 'suspicious' ? YELLOW
+          : level === 'low' ? BLUE
+            : GREEN
+      const icon = level === 'critical' ? '⚠'
+        : level === 'suspicious' ? '!'
+          : level === 'low' ? '·'
+            : '✓'
+
+      console.log(`  ${color}${icon}${RESET} ${BOLD}${result.pkg.name}@${result.pkg.version}${RESET} ${DIM}risk: ${result.riskScore}/100${RESET}`)
+      for (const w of result.warnings) {
+        const wColor = w.severity === 'high' ? RED : w.severity === 'medium' ? YELLOW : DIM
+        console.log(`    ${wColor}${w.severity.toUpperCase().padEnd(6)}${RESET} ${w.description}`)
+      }
+    },
+
+    diffHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} behavioral diffing...`)
+      console.log()
+    },
+    diffResult(d) {
+      if (d.isNewPackage) {
+        console.log(`  ${YELLOW}!${RESET} ${BOLD}${d.name}@${d.currentVersion}${RESET} ${DIM}(new package with install scripts)${RESET}`)
+      } else {
+        console.log(`  ${RED}⚠${RESET} ${BOLD}${d.name}${RESET} ${DIM}${d.previousVersion} → ${d.currentVersion}${RESET}`)
+      }
+      if (d.newWarnings.length > 0) {
+        console.log(`    ${RED}new warnings:${RESET} ${d.newWarnings.join(', ')}`)
+      }
+      if (d.riskDelta > 0) {
+        console.log(`    ${RED}risk increased:${RESET} +${d.riskDelta}`)
+      }
+    },
+
+    threatIntelHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} querying threat intelligence network...`)
+      console.log()
+    },
+    threatIntelResult(r) {
+      if (!r.flagged) return
+      console.log(`  ${RED}⚠ COMMUNITY ALERT${RESET}  ${BOLD}${r.name}@${r.version}${RESET}`)
+      console.log(`    ${MAGENTA}INTEL ${RESET} ${r.reportCount} report${r.reportCount !== 1 ? 's' : ''} from other developers`)
+      if (r.topReasons.length > 0) {
+        console.log(`    ${MAGENTA}INTEL ${RESET} top reason: ${r.topReasons[0]}`)
+        if (r.topReasons.length > 1) {
+          console.log(`    ${DIM}       also: ${r.topReasons.slice(1).join(', ')}${RESET}`)
+        }
+      }
+      if (r.firstSeen && r.lastSeen) {
+        const ago = timeSince(r.lastSeen)
+        console.log(`    ${DIM}       first seen: ${r.firstSeen.split('T')[0]}  last report: ${ago}${RESET}`)
+      }
+      console.log(`    ${YELLOW}→${RESET} This package was flagged by the safenpm community network.`)
+      console.log(`    ${YELLOW}→${RESET} Consider removing it or verifying it is legitimate.`)
+      console.log()
+    },
+
+    maintainerHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} maintainer change detection...`)
+      console.log()
+    },
+    maintainerResult(r) {
+      if (!r.maintainerChanged) return
+      console.log(`  ${RED}⚠${RESET} ${BOLD}${r.name}@${r.version}${RESET} publisher changed`)
+      console.log(`    ${DIM}${r.previousPublisher} → ${RED}${r.currentPublisher}${RESET}`)
+    },
+
+    // closing summary ----------------------------------------------
+    summary(total, blocked, skippedCount = 0, warningCount = 0) {
+      console.log()
+      const parts: string[] = []
+      if (blocked > 0) parts.push(`${RED}${blocked} blocked${RESET}`)
+      if (skippedCount > 0) parts.push(`${BLUE}${skippedCount} allowlisted${RESET}`)
+      const clean = total - blocked - skippedCount
+      if (clean > 0) parts.push(`${GREEN}${clean} clean${RESET}`)
+      if (warningCount > 0) parts.push(`${YELLOW}${warningCount} warnings${RESET}`)
+
+      if (blocked === 0) {
+        console.log(`${GREEN}  ${BOLD}all clear${RESET} — ${total} script${total !== 1 ? 's' : ''} processed${parts.length ? ` (${parts.join(', ')})` : ''}`)
+      } else {
+        console.log(`${RED}  ${BOLD}${blocked} blocked${RESET}${RED} out of ${total} install script${total !== 1 ? 's' : ''}${RESET}`)
+        if (parts.length) console.log(`${DIM}  breakdown: ${parts.join(', ')}${RESET}`)
+        console.log(`${DIM}  signals reported to safenpm network${RESET}`)
+      }
+      console.log()
+    },
+
+    // interactive --------------------------------------------------
+    interactivePrompt(name, version, hook) {
+      console.log()
+      console.log(`${YELLOW}  ⚠${RESET}  ${BOLD}${name}@${version}${RESET} was ${RED}blocked${RESET} [${hook}]`)
+      console.log(`${DIM}    choose: [r]etry without sandbox / [s]kip / [a]bort${RESET}`)
+
+      const result = require('child_process').spawnSync(
+        'bash',
+        ['-c', 'read -n 1 -p "    > " choice && echo $choice'],
+        { stdio: ['inherit', 'pipe', 'inherit'], encoding: 'utf8' },
+      )
+      const choice = (result.stdout || '').trim().toLowerCase()
+      console.log()
+      return choice
+    },
+  }
+}

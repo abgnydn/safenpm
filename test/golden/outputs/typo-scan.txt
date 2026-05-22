@@ -1,0 +1,27 @@
+
+[1m  safenpm[0m [2m— sandboxed installs[0m
+
+
+
+[36m  →[0m typosquat detection...
+
+  [31m⚠[0m [1maxois[0m → looks like [36maxios[0m
+    [2mtechnique: char-swap  distance: 2  confidence: high[0m
+  [31m⚠[0m [1mexpresss[0m → looks like [36mexpress[0m
+    [2mtechnique: edit-distance-1  distance: 1  confidence: high[0m
+  [31m⚠[0m [1mlodahs[0m → looks like [36mlodash[0m
+    [2mtechnique: char-swap  distance: 2  confidence: high[0m
+
+[36m  →[0m lockfile integrity audit...
+
+  [33m![0m no package-lock.json found
+
+[36m  →[0m dependency reputation scoring...
+
+  [31moverall: 30/100[0m [2m(3 packages, avg 30)[0m
+  [2mtiers:[0m [2m3 unknown[0m
+  [2mriskiest:[0m
+    [31m30[0m axois@0.0.1 [2m(unknown)[0m
+    [31m30[0m expresss@0.0.1 [2m(unknown)[0m
+    [31m30[0m lodahs@0.0.1 [2m(unknown)[0m
+EXITCODE:0

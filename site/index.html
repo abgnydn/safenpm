@@ -29,9 +29,40 @@
   <!-- LinkedIn -->
   <meta property="og:locale" content="en_US">
 
+  <link rel="canonical" href="https://safenpm.dev/">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://safenpm.dev/#app",
+        "name": "safenpm",
+        "url": "https://safenpm.dev/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "description": "Drop-in npm install replacement that sandboxes postinstall scripts, blocks network access, detects typosquats, and shares alerts across a decentralized threat intelligence network.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://barisgunaydin.com/#me",
+        "name": "Ahmet Baris Gunaydin",
+        "url": "https://barisgunaydin.com",
+        "sameAs": [
+          "https://github.com/abgnydn",
+          "https://kernelfusion.dev",
+          "https://gpubench.dev"
+        ]
+      }
+    ]
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -705,9 +736,31 @@
       /* General */
       .container { padding: 0 16px; }
     }
+
+    /* Accessibility: skip-link, focus styles, motion guard. */
+    .skip-link {
+      position: absolute; top: -40px; left: 8px;
+      padding: 8px 12px; background: var(--accent); color: var(--bg);
+      font-weight: 600; border-radius: 4px;
+      z-index: 1000;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: 8px; outline: none; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
   </style>
 </head>
 <body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
 
 <!-- Nav -->
 <nav>
@@ -725,10 +778,12 @@
       <a href="showcase.html">Showcase</a>
       <a href="#dashboard">Dashboard</a>
       <a href="https://github.com/abgnydn/safenpm">GitHub</a>
-      <span class="nav-badge">v1.0.0</span>
+      <span class="nav-badge">v0.1.0</span>
     </div>
   </div>
 </nav>
+
+<main id="main" tabindex="-1">
 
 <!-- Hero -->
 <section class="hero">
@@ -771,10 +826,10 @@
           <div class="play-dot red"></div>
           <div class="play-dot yellow"></div>
           <div class="play-dot green"></div>
-          <div class="play-title">safenpm v1.0.0 — interactive playground</div>
+          <div class="play-title">safenpm v0.1.0 — interactive playground</div>
         </div>
         <div class="play-body" id="playBody">
-          <div class="play-line"><span class="p-green p-bold">safenpm v1.0.0</span> <span class="p-dim">— interactive playground</span></div>
+          <div class="play-line"><span class="p-green p-bold">safenpm v0.1.0</span> <span class="p-dim">— interactive playground</span></div>
           <div class="play-line"><span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> to see available commands, or click a quick command below.</span></div>
           <div class="play-line">&nbsp;</div>
         </div>
@@ -1210,7 +1265,7 @@ node-gyp</code></pre>
 
       <h4>JSON output structure</h4>
       <pre><code>{
-  "version": "1.0.0",
+  "version": "0.1.0",
   "backend": "sandbox-exec (macOS)",
   "packages": [...],
   "typosquats": [...],
@@ -1421,10 +1476,12 @@ safenpm diff --json</code></pre>
   </div>
 </section>
 
+</main>
+
 <!-- Footer -->
 <footer>
   <div class="container">
-    <p>safenpm v1.0.0 &middot; MIT License</p>
+    <p>safenpm v0.1.0 &middot; MIT License</p>
     <div class="footer-links">
       <a href="https://github.com/abgnydn/safenpm">GitHub</a>
       <a href="https://www.npmjs.com/package/@abgunaydin/safenpm">npm</a>
@@ -1435,7 +1492,10 @@ safenpm diff --json</code></pre>
   </div>
 </footer>
 
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<!-- lucide is vendored at site/vendor/lucide.min.js (pinned v0.456.0)
+     so that a future unpkg / lucide compromise cannot execute arbitrary
+     JS on safenpm.dev. Update by re-running `curl -fsSL ... > ...`. -->
+<script src="/vendor/lucide.min.js"></script>
 <script>
 function copyInstall() {
   navigator.clipboard.writeText('npm install -g @abgunaydin/safenpm').then(() => {
@@ -1566,7 +1626,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 
   function clearTerm() {
     body.innerHTML='';
-    ln('<span class="p-green p-bold">safenpm v1.0.0</span> <span class="p-dim">— interactive playground</span>');
+    ln('<span class="p-green p-bold">safenpm v0.1.0</span> <span class="p-dim">— interactive playground</span>');
     ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> to see available commands.</span>');
     ln(''); prompt();
   }
@@ -1584,7 +1644,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
       if(sub==='doctor')return cmdDoctor();
       if(sub==='diff')return cmdDiff(arg);
       if(sub==='fix')return cmdFix(arg);
-      if(sub==='--version'||sub==='-v'){ln('<span class="p-green">1.0.0</span>');ln('');prompt();return;}
+      if(sub==='--version'||sub==='-v'){ln('<span class="p-green">0.1.0</span>');ln('');prompt();return;}
       if(!sub){ln('<span class="p-dim">Usage: safenpm &lt;command&gt; [args]. Type </span><span class="p-cyan">help</span><span class="p-dim"> for commands.</span>');ln('');prompt();return;}
       ln('<span class="p-red">Unknown command:</span> safenpm '+esc(sub));ln('<span class="p-dim">Type </span><span class="p-cyan">help</span><span class="p-dim"> for available commands.</span>');ln('');prompt();return;
     }
@@ -1657,7 +1717,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
   function cmdInstall(name) {
     if(!name){ln('<span class="p-red">Usage:</span> safenpm install &lt;package-name&gt;');ln('');prompt();return;}
     const typo=checkTypo(name), p=PKG_DATA[name], l=[];
-    l.push('<span class="p-green p-bold">safenpm</span> <span class="p-dim">v1.0.0</span>','','<span class="p-dim">⏳ Phase 1: Pre-install scan...</span>');
+    l.push('<span class="p-green p-bold">safenpm</span> <span class="p-dim">v0.1.0</span>','','<span class="p-dim">⏳ Phase 1: Pre-install scan...</span>');
     if(typo){
       l.push('  <span class="p-red">⚠ Typosquat:</span> <span class="p-red">'+esc(typo.suspect)+'</span> → <span class="p-yellow">'+esc(typo.target)+'</span> <span class="p-dim">('+typo.tech+')</span>',
         '  <span class="p-red p-bold">✗ INSTALL BLOCKED</span>','',
@@ -1702,7 +1762,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
     const ov=secs.reduce((s,c)=>s+c.s*c.w/100,0);
     const og=ov>=97?'A+':ov>=93?'A':ov>=90?'A-':ov>=87?'B+':ov>=83?'B':ov>=80?'B-':ov>=77?'C+':ov>=73?'C':'C-';
     const gc=og.startsWith('A')?'p-green':og.startsWith('B')?'p-blue':'p-yellow';
-    const l=['<span class="p-green p-bold">safenpm doctor</span> <span class="p-dim">v1.0.0</span>','',
+    const l=['<span class="p-green p-bold">safenpm doctor</span> <span class="p-dim">v0.1.0</span>','',
       '  <span class="'+gc+' p-bold">┌─────────────┐</span>',
       '  <span class="'+gc+' p-bold">│  Grade: '+og.padEnd(3)+' │</span>',
       '  <span class="'+gc+' p-bold">│  Score: '+Math.round(ov).toString().padEnd(3)+' │</span>',
@@ -1939,7 +1999,5 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 })();
 </script>
 
-<script defer src="/_vercel/insights/script.js"></script>
-<script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

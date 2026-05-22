@@ -1,0 +1,36 @@
+
+[1m  safenpm[0m [2m— sandboxed installs[0m
+
+
+[36m  →[0m running health check...
+
+  [31m[1mGrade: F[0m  [2m(53/100)[0m
+  [2m4 critical issues found. Review the recommendations below.[0m
+
+  [31m✕[0m [1mLockfile[0m [2m20/100[0m
+  [31m  ✕[0m No package-lock.json found
+      [36mfix:[0m [2mRun `npm install` to generate a lockfile for deterministic builds[0m
+
+  [31m✕[0m [1mInstall Scripts[0m [2m55/100[0m
+  [31m  ✕[0m phone-home@0.0.1 — risk 60/100: Uses curl/wget to fetch remote content; Pipes remote content to shell (curl | sh pattern)
+      [36mfix:[0m [2mRun `safenpm install --scan` to sandbox this package, or add to .safenpmrc if trusted[0m
+
+  [32m✓[0m [1mTyposquats[0m [2m100/100[0m
+  [32m  ✓[0m 3 packages checked, no suspects
+
+  [31m✕[0m [1mReputation[0m [2m24/100[0m
+  [33m  ![0m phone-home@0.0.1 scored 10/100 (risky)
+      [36mfix:[0m [2mReview this package — check for a more established alternative[0m
+  [33m  ![0m build-tool@3.0.0 scored 20/100 (unknown)
+      [36mfix:[0m [2mReview this package — check for a more established alternative[0m
+
+  [31m✕[0m [1mBehavior[0m [2m30/100[0m
+  [31m  ✕[0m phone-home@0.0.1 is new and has install scripts
+      [36mfix:[0m [2mReview the updated install script before trusting this version[0m
+
+  [32m✓[0m [1mProject Hygiene[0m [2m85/100[0m
+  [2m  ·[0m No .safenpmrc file — consider creating one to allowlist trusted native packages
+      [36mfix:[0m [2mCreate .safenpmrc with packages like bcrypt, sharp that need install scripts[0m
+  [2m  ·[0m No engines field — consider specifying a Node.js version
+      [36mfix:[0m [2mAdd `"engines": {"node": ">=18"}` to package.json[0m
+EXITCODE:1

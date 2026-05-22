@@ -1,0 +1,91 @@
+{
+  "grade": "F",
+  "score": 53,
+  "summary": "4 critical issues found. Review the recommendations below.",
+  "sections": [
+    {
+      "name": "Lockfile",
+      "score": 20,
+      "status": "fail",
+      "findings": [
+        {
+          "severity": "critical",
+          "message": "No package-lock.json found",
+          "fix": "Run `npm install` to generate a lockfile for deterministic builds"
+        }
+      ]
+    },
+    {
+      "name": "Install Scripts",
+      "score": 55,
+      "status": "fail",
+      "findings": [
+        {
+          "severity": "critical",
+          "message": "phone-home@0.0.1 — risk 60/100: Uses curl/wget to fetch remote content; Pipes remote content to shell (curl | sh pattern)",
+          "fix": "Run `safenpm install --scan` to sandbox this package, or add to .safenpmrc if trusted"
+        }
+      ]
+    },
+    {
+      "name": "Typosquats",
+      "score": 100,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "pass",
+          "message": "3 packages checked, no suspects",
+          "fix": null
+        }
+      ]
+    },
+    {
+      "name": "Reputation",
+      "score": 24,
+      "status": "fail",
+      "findings": [
+        {
+          "severity": "warning",
+          "message": "phone-home@0.0.1 scored 10/100 (risky)",
+          "fix": "Review this package — check for a more established alternative"
+        },
+        {
+          "severity": "warning",
+          "message": "build-tool@3.0.0 scored 20/100 (unknown)",
+          "fix": "Review this package — check for a more established alternative"
+        }
+      ]
+    },
+    {
+      "name": "Behavior",
+      "score": 30,
+      "status": "fail",
+      "findings": [
+        {
+          "severity": "critical",
+          "message": "phone-home@0.0.1 is new and has install scripts",
+          "fix": "Review the updated install script before trusting this version"
+        }
+      ]
+    },
+    {
+      "name": "Project Hygiene",
+      "score": 85,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "info",
+          "message": "No .safenpmrc file — consider creating one to allowlist trusted native packages",
+          "fix": "Create .safenpmrc with packages like bcrypt, sharp that need install scripts"
+        },
+        {
+          "severity": "info",
+          "message": "No engines field — consider specifying a Node.js version",
+          "fix": "Add `\"engines\": {\"node\": \">=18\"}` to package.json"
+        }
+      ]
+    }
+  ],
+  "fixes": []
+}
+EXITCODE:1

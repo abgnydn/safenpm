@@ -1,0 +1,31 @@
+
+[1m  safenpm[0m [2m— sandboxed installs[0m
+
+
+[36m  →[0m running health check...
+
+  [32m[1mGrade: B[0m  [2m(83/100)[0m
+  [2m1 critical issue found. Review the recommendations below.[0m
+
+  [31m✕[0m [1mLockfile[0m [2m20/100[0m
+  [31m  ✕[0m No package-lock.json found
+      [36mfix:[0m [2mRun `npm install` to generate a lockfile for deterministic builds[0m
+
+  [32m✓[0m [1mInstall Scripts[0m [2m100/100[0m
+  [2m  ·[0m No node_modules — skipped
+
+  [32m✓[0m [1mTyposquats[0m [2m100/100[0m
+  [2m  ·[0m No node_modules — skipped
+
+  [32m✓[0m [1mReputation[0m [2m100/100[0m
+  [2m  ·[0m No node_modules — skipped
+
+  [32m✓[0m [1mBehavior[0m [2m100/100[0m
+  [2m  ·[0m No node_modules — skipped
+
+  [32m✓[0m [1mProject Hygiene[0m [2m85/100[0m
+  [2m  ·[0m No .safenpmrc file — consider creating one to allowlist trusted native packages
+      [36mfix:[0m [2mCreate .safenpmrc with packages like bcrypt, sharp that need install scripts[0m
+  [2m  ·[0m No engines field — consider specifying a Node.js version
+      [36mfix:[0m [2mAdd `"engines": {"node": ">=18"}` to package.json[0m
+EXITCODE:0

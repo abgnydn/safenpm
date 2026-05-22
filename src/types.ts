@@ -50,6 +50,9 @@ export interface JsonOutput {
   typosquats: JsonTyposquatResult[]
   lockfileAudit: JsonLockfileResult | null
   reputationSummary: JsonReputationSummary | null
+  // Optional — present only when --scan ran and npm audit produced output.
+  // Adding this is backward-compatible; existing consumers ignore unknown keys.
+  npmAudit?: JsonNpmAuditResult
   summary: {
     total: number
     blocked: number
@@ -61,6 +64,19 @@ export interface JsonOutput {
     lockfileIssues: number
     reputationScore: number
   }
+}
+
+export interface JsonNpmAuditResult {
+  ran: boolean
+  total: number
+  totals: { info: number; low: number; moderate: number; high: number; critical: number }
+  vulnerabilities: {
+    name: string
+    severity: string
+    range: string
+    fixAvailable: boolean
+    via: string[]
+  }[]
 }
 
 export interface JsonPackageResult {

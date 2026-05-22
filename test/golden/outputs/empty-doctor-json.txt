@@ -1,0 +1,86 @@
+{
+  "grade": "B",
+  "score": 83,
+  "summary": "1 critical issue found. Review the recommendations below.",
+  "sections": [
+    {
+      "name": "Lockfile",
+      "score": 20,
+      "status": "fail",
+      "findings": [
+        {
+          "severity": "critical",
+          "message": "No package-lock.json found",
+          "fix": "Run `npm install` to generate a lockfile for deterministic builds"
+        }
+      ]
+    },
+    {
+      "name": "Install Scripts",
+      "score": 100,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "info",
+          "message": "No node_modules — skipped",
+          "fix": null
+        }
+      ]
+    },
+    {
+      "name": "Typosquats",
+      "score": 100,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "info",
+          "message": "No node_modules — skipped",
+          "fix": null
+        }
+      ]
+    },
+    {
+      "name": "Reputation",
+      "score": 100,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "info",
+          "message": "No node_modules — skipped",
+          "fix": null
+        }
+      ]
+    },
+    {
+      "name": "Behavior",
+      "score": 100,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "info",
+          "message": "No node_modules — skipped",
+          "fix": null
+        }
+      ]
+    },
+    {
+      "name": "Project Hygiene",
+      "score": 85,
+      "status": "pass",
+      "findings": [
+        {
+          "severity": "info",
+          "message": "No .safenpmrc file — consider creating one to allowlist trusted native packages",
+          "fix": "Create .safenpmrc with packages like bcrypt, sharp that need install scripts"
+        },
+        {
+          "severity": "info",
+          "message": "No engines field — consider specifying a Node.js version",
+          "fix": "Add `\"engines\": {\"node\": \">=18\"}` to package.json"
+        }
+      ]
+    }
+  ],
+  "fixes": []
+}
+EXITCODE:0

@@ -9,12 +9,14 @@
 
 # safenpm
 
-**Drop-in `npm install` replacement that sandboxes postinstall scripts, blocks network access, and catches supply-chain attacks before they execute — backed by a live community threat intelligence network.**
+**Drop-in `npm install` replacement that runs every postinstall script inside an OS sandbox with no network access and a restricted filesystem, plus static-analysis, typosquat, lockfile, and reputation checks.**
 
-Every year, thousands of malicious packages slip into npm — exfiltrating credentials via postinstall scripts, opening reverse shells, or stealing SSH keys. `safenpm` wraps `npm install` with a security-first pipeline: static analysis, sandboxed execution, typosquat detection, maintainer change alerts, lockfile integrity checks, and real-time threat intelligence — all in one command.
+Many malicious npm packages exfiltrate credentials, open reverse shells, or steal SSH keys via install-time scripts. safenpm wraps `npm install` with a defense-in-depth pipeline: static analysis, sandboxed execution, typosquat detection, maintainer-change alerts, lockfile integrity, and an experimental opt-in threat-intelligence network.
+
+> **Status: 0.1.0 — pre-release, solo-maintained, unaudited.** safenpm is useful as a belt-and-suspenders layer in front of `npm install`. It does **not** replace runtime sandboxing or formal supply-chain reviews. See [SECURITY.md](./SECURITY.md) for the honest threat model — including what it doesn't catch.
 
 <p align="center">
-  <a href="https://safenpm.dev"><strong>Website</strong></a> · <a href="https://safenpm.dev/showcase.html"><strong>Showcase</strong></a> · <a href="#quick-start"><strong>Quick Start</strong></a> · <a href="#docs"><strong>Docs</strong></a>
+  <a href="https://safenpm.dev"><strong>Website</strong></a> · <a href="https://safenpm.dev/showcase.html"><strong>Showcase</strong></a> · <a href="./SECURITY.md"><strong>Threat model</strong></a> · <a href="#quick-start"><strong>Quick start</strong></a>
 </p>
 
 ---
@@ -69,13 +71,13 @@ Validates `package-lock.json` for non-registry URLs, missing integrity hashes, a
 ### Reputation Scoring
 Scores every package 0-100 based on maintainer count, license, repository presence, dependency weight, and maturity. Aggregates into a project-level health grade.
 
-### Decentralized Threat Intelligence Network
+### Experimental threat-intelligence network
 
-**Live now at [safenpm.dev](https://safenpm.dev).**
+**Hosted at [safenpm.dev](https://safenpm.dev).** The network is opt-in (default-on), runs on a single Cloudflare Pages + Upstash Redis deployment, has no SLA, and is operated by the maintainer. **Adoption is currently low, so flags are rare.** Disable outgoing reports with `--no-report`.
 
-When safenpm blocks a suspicious package, the signal flow is: **block -> anonymous report -> community warned**. The blocked package name, script hash, and block reason are reported to the safenpm community network — no identifying information leaves your machine. On **every install**, safenpm queries this network to check if any of your dependencies have been flagged by other developers. If one developer gets hit by a malicious package, every safenpm user is warned automatically.
+Signal flow on a block: `block → anonymous report → other safenpm users querying the same pkg@version see the aggregate`. The blocked package name, script hash, and block reason are sent. No personally-identifying information leaves your machine.
 
-When a flagged package is detected in your dependencies, you will see:
+When a flagged package is detected:
 
 ```
   -> querying threat intelligence network...
@@ -89,13 +91,15 @@ When a flagged package is detected in your dependencies, you will see:
     -> Consider removing it or verifying it is legitimate.
 ```
 
-**Anti-abuse safeguards** prevent manipulation of the threat network:
-- **Rate limiting** — per-IP and global rate limits prevent flood attacks
-- **Deduplication** — repeated reports from the same source are collapsed
-- **Threshold-based flagging** — a package requires at least 3 independent reports before it triggers community alerts (15 reports for popular packages with >10k weekly downloads)
-- **Script hash consistency** — reports are validated against the actual script hash to prevent false flagging of legitimate packages
+**Sybil-resistance is partial — do not rely on community flagging as your only signal.** Anti-abuse safeguards in place:
+- **Rate limit** — 20 signals per machineId per hour.
+- **24-hour dedup** — repeat reports of the same `(machineId, pkg@version)` collapse.
+- **Distinct-reporter set** — `distinctReporters` is a Redis SET of machineIds, so the same machine cannot inflate the count across windows.
+- **MachineId entropy floor** — reports with machineIds shorter than 16 chars or outside `[a-zA-Z0-9_-]` are rejected, raising the cost of trivial Sybil generation.
+- **Threshold-based flagging** — a non-curated package requires **≥5** distinct reporters; a curated "high-value-target" package requires **≥15**. The curated list is a hand-maintained set of ~50 names; there is no live download-count check.
+- **Script-hash consistency** — packages reported with >3 distinct script hashes are treated as inconsistent and not flagged.
 
-The live transparent stats dashboard at [safenpm.dev](https://safenpm.dev) shows real-time network activity, total reports, unique packages flagged, and active contributors.
+These mitigations raise the cost of manipulation; they do not eliminate it. A motivated attacker can still generate enough valid machineIds to flag a target.
 
 ### Doctor Command
 Run `safenpm doctor` for a full project health report — letter grade, actionable fixes, and a breakdown of every risk signal across your dependency tree.
@@ -168,18 +172,21 @@ sharp
 
 ## Threat Model
 
-**Protects against:**
-- Malicious postinstall/preinstall scripts that exfiltrate credentials or open reverse shells
-- Typosquatting attacks (`axois` instead of `axios`)
-- Dependency confusion via scope confusion
-- Maintainer account takeovers
-- Lockfile manipulation (non-registry URLs, missing integrity hashes)
+See [SECURITY.md](./SECURITY.md) for the full version. Short form:
 
-**Does NOT protect against:**
-- Malicious code in package source (not in install scripts)
-- Build-time attacks in webpack/babel plugins
-- Pre-existing compromised packages in your lockfile
-- Registry-level compromise
+**Catches:**
+- Malicious `preinstall` / `install` / `postinstall` / `prepare` scripts that exfiltrate credentials, open reverse shells, or touch sensitive paths.
+- Typosquat names (e.g. `axois` for `axios`, scope confusion like `@evil/lodash`).
+- Maintainer-change anomalies on packages you've already snapshotted.
+- Lockfile tampering — non-registry URLs, missing integrity hashes, weak hashes.
+
+**Misses (important):**
+- **Runtime code execution.** safenpm does not isolate code that runs when your app imports a package. Many high-profile npm attacks (event-stream, ua-parser-js, xz-style backdoors) execute at `require()` time, not install time. Once an install finishes, the package's code runs with full Node permissions inside your app.
+- Build-time attacks in webpack / babel / esbuild plugins.
+- Pre-existing compromised packages already in your lockfile and matching the legitimate publisher.
+- Targeted attacks crafted with knowledge that you use safenpm (deferred to runtime, sidestep the static patterns, hide in package data).
+- Registry-level compromise.
+- Native binary backdoors that pass the install sandbox but ship pre-compiled malicious code.
 
 ## Architecture
 
