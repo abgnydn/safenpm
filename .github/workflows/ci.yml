@@ -21,7 +21,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [18, 20, 22]
+        # Node 18 went EOL 2025-04; vitest 4 requires `node:util.styleText`
+        # which is Node 20.12+. Drop 18 from the matrix.
+        node: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,14 +38,12 @@ jobs:
         run: npm run test:unit
 
   golden:
-    # The golden snapshots normalize Mac mktemp paths, so they run on
-    # macOS + Linux (where the fixtures match). Windows path
-    # conventions would require a separate snapshot set.
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    # The golden snapshots include the macOS-specific backend label
+    # ("sandbox-exec (macOS)"). On Linux the same path produces
+    # "firejail (Linux)" or "none", so the snapshots are platform-
+    # locked by design. Linux + Windows would each need their own
+    # captured snapshot set.
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

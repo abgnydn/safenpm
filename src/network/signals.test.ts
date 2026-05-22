@@ -66,6 +66,7 @@ describe('buildSignal — wire shape', () => {
 
   it('reports a platform string in <platform>/<arch> shape', () => {
     const s = buildSignal(blockedResult)
-    expect(s.platform).toMatch(/^[a-z]+\/[a-z0-9_-]+$/)
+    // Platform allows digits because Node returns `win32` on Windows.
+    expect(s.platform).toMatch(/^[a-z0-9]+\/[a-z0-9_-]+$/)
   })
 })

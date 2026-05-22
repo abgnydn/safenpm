@@ -44,7 +44,7 @@
     "render:og": "node scripts/render-og.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260422.1",
