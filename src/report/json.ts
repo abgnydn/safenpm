@@ -38,6 +38,8 @@ export function createJsonReporter(): Reporter {
     npmAuditResult() {},
     symlinkHeader() {},
     symlinkResult() {},
+    nativeHeader() {},
+    nativeResult() {},
     analysisHeader() {},
     analysisResult() {},
     diffHeader() {},

@@ -141,6 +141,12 @@ function reportPreFindings(findings: readonly Finding[], reporter: Reporter): vo
     }
   }
 
+  const nat = byKind(findings, 'native')
+  if (nat && nat.result.suspicious.length > 0) {
+    reporter.nativeHeader()
+    reporter.nativeResult(nat.result.suspicious)
+  }
+
   const typo = byKind(findings, 'typosquats')
   if (typo && typo.results.length > 0) {
     reporter.typosquatHeader()

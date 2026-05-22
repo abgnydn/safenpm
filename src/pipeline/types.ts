@@ -11,6 +11,7 @@
 import type { AnalysisResult } from '../analysis/analyzer'
 import type { DiffResult } from '../analysis/diffing'
 import type { LockfileAuditResult } from '../analysis/lockfile'
+import type { NativeAuditResult } from '../analysis/native'
 import type { NpmAuditResult } from '../analysis/npm-audit'
 import type { ReputationSummary } from '../analysis/reputation'
 import type { SymlinkAuditResult } from '../analysis/symlinks'
@@ -36,6 +37,7 @@ export type Finding =
   | { kind: 'reputation';    summary: ReputationSummary }
   | { kind: 'npm-audit';     result: NpmAuditResult }
   | { kind: 'symlinks';      result: SymlinkAuditResult }
+  | { kind: 'native';        result: NativeAuditResult }
   | { kind: 'analysis';      results: AnalysisResult[] }
   | { kind: 'diffs';         results: DiffResult[] }
   | { kind: 'threat-intel';  results: ThreatIntelResult[] }

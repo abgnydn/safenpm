@@ -221,6 +221,23 @@ export function createHumanReporter(): Reporter {
       }
     },
 
+    nativeHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} native addon (.node) symbol scan...`)
+      console.log()
+    },
+    nativeResult(addons) {
+      for (const a of addons) {
+        const worst = a.symbols.reduce((acc, s) => (s.risk === 'critical' ? 'critical' : acc === 'critical' ? 'critical' : s.risk), 'medium')
+        const c = worst === 'critical' ? RED : worst === 'high' ? YELLOW : DIM
+        const icon = worst === 'critical' ? '⚠' : worst === 'high' ? '!' : '·'
+        const syms = a.symbols.slice(0, 6).map((s) => `${s.name}(${s.risk[0]})`).join(' ')
+        const more = a.symbols.length > 6 ? ` ${DIM}+${a.symbols.length - 6} more${RESET}` : ''
+        console.log(`  ${c}${icon}${RESET} ${BOLD}${a.pkg}${RESET}  ${DIM}${a.relPath}${RESET}`)
+        console.log(`    ${DIM}symbols:${RESET} ${syms}${more}`)
+      }
+    },
+
     analysisHeader() {
       console.log()
       console.log(`${CYAN}  →${RESET} static analysis of install scripts...`)

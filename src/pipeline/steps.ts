@@ -18,6 +18,7 @@
 import { analyzeAll } from '../analysis/analyzer'
 import { diffScripts, significantDiffs } from '../analysis/diffing'
 import { auditLockfile } from '../analysis/lockfile'
+import { auditNativeAddons } from '../analysis/native'
 import { runNpmAudit } from '../analysis/npm-audit'
 import { scoreReputationFromNodeModules } from '../analysis/reputation'
 import { auditSymlinks } from '../analysis/symlinks'
@@ -68,6 +69,16 @@ export const symlinkStep: Step<{ kind: 'symlinks'; result: ReturnType<typeof aud
   run: (ctx) => ({ kind: 'symlinks', result: auditSymlinks(ctx.nodeModulesPath) }),
 }
 
+// Native-addon byte scan runs on every install — install-time
+// sandbox can't see inside compiled .node files, and the cost of
+// a buffer-scan over the (usually few) addons is small. Surfaces
+// suspicious imported-symbol names; doesn't block (heuristic).
+export const nativeStep: Step<{ kind: 'native'; result: ReturnType<typeof auditNativeAddons> }> = {
+  name: 'native',
+  enabled: () => true,
+  run: (ctx) => ({ kind: 'native', result: auditNativeAddons(ctx.nodeModulesPath) }),
+}
+
 export const analysisStep: Step<{ kind: 'analysis'; results: ReturnType<typeof analyzeAll> }> = {
   name: 'analysis',
   enabled: () => true,
@@ -104,6 +115,7 @@ export const maintainerStep: Step<{ kind: 'maintainers'; results: Awaited<Return
  */
 export const PRE_SCRIPT_STEPS: readonly Step[] = [
   symlinkStep,        // always — escape symlinks are an install-time-only check
+  nativeStep,         // always — .node files are a sandbox blind spot
   typosquatStep,
   lockfileStep,
   reputationStep,

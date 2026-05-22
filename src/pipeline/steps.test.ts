@@ -7,6 +7,7 @@ import {
   reputationStep,
   npmAuditStep,
   symlinkStep,
+  nativeStep,
   analysisStep,
   diffStep,
   threatIntelStep,
@@ -29,9 +30,9 @@ const ctx: AnalysisContext = {
 }
 
 describe('pipeline step lists', () => {
-  it('PRE_SCRIPT_STEPS leads with the always-on symlink audit then the --scan-only checks', () => {
+  it('PRE_SCRIPT_STEPS leads with the always-on hardening checks then the --scan-only ones', () => {
     expect(PRE_SCRIPT_STEPS.map((s) => s.name)).toEqual([
-      'symlinks', 'typosquats', 'lockfile', 'reputation', 'npm-audit',
+      'symlinks', 'native', 'typosquats', 'lockfile', 'reputation', 'npm-audit',
     ])
   })
 
@@ -50,13 +51,11 @@ describe('step.enabled gating', () => {
     }
   })
 
-  it('analysis + threat-intel + symlink always run regardless of --scan', () => {
-    expect(analysisStep.enabled({ ...baseOpts, scan: false })).toBe(true)
-    expect(threatIntelStep.enabled({ ...baseOpts, scan: false })).toBe(true)
-    expect(symlinkStep.enabled({ ...baseOpts, scan: false })).toBe(true)
-    expect(analysisStep.enabled({ ...baseOpts, scan: true })).toBe(true)
-    expect(threatIntelStep.enabled({ ...baseOpts, scan: true })).toBe(true)
-    expect(symlinkStep.enabled({ ...baseOpts, scan: true })).toBe(true)
+  it('always-on steps (analysis / threat-intel / symlink / native) run regardless of --scan', () => {
+    for (const step of [analysisStep, threatIntelStep, symlinkStep, nativeStep]) {
+      expect(step.enabled({ ...baseOpts, scan: false }), step.name).toBe(true)
+      expect(step.enabled({ ...baseOpts, scan: true }), step.name).toBe(true)
+    }
   })
 })
 
@@ -83,5 +82,17 @@ describe('step.run shape', () => {
     const r = analysisStep.run(ctx)
     expect(r.kind).toBe('analysis')
     expect(r.results).toEqual([])
+  })
+
+  it('symlinkStep emits { kind: "symlinks", result } with no findings on a missing path', () => {
+    const r = symlinkStep.run(ctx)
+    expect(r.kind).toBe('symlinks')
+    expect(r.result.findings).toEqual([])
+  })
+
+  it('nativeStep emits { kind: "native", result } with scanned:0 on a missing path', () => {
+    const r = nativeStep.run(ctx)
+    expect(r.kind).toBe('native')
+    expect(r.result.scanned).toBe(0)
   })
 })

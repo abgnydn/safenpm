@@ -60,6 +60,8 @@ export interface Reporter {
   npmAuditResult(r: NpmAuditResult): void
   symlinkHeader(): void
   symlinkResult(findings: ReadonlyArray<{ pkg: string; symlink: string; target: string; reason: string }>): void
+  nativeHeader(): void
+  nativeResult(addons: ReadonlyArray<{ pkg: string; relPath: string; symbols: ReadonlyArray<{ name: string; risk: string; category: string }> }>): void
   analysisHeader(): void
   analysisResult(r: AnalysisResult): void
   diffHeader(): void
