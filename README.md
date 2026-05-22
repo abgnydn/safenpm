@@ -230,12 +230,13 @@ Architecture map: [`docs/architecture.md`](./docs/architecture.md). Contribution
 
 ---
 
-## What's NOT shipping in 0.1
+## What's NOT shipping yet
 
-- **ESM trace coverage** — the runtime tracer only sees CJS `require()`. Targeted for 0.2.
-- **Runtime enforcement** — `trace` is observe-only by design. Deny-by-default proxy wrapping is targeted for 0.3.
-- **External security audit** — none has happened. The macOS sandbox profile in particular is one person's hand-written TinyScheme, and a SIGABRT-classification bug in the result-tagging code went undetected for months until it was fixed in 0.1.0. Audit is the gating item for 0.4 → 1.0.
-- **Production adoption** — see the top-of-README status banner.
+- **ESM runtime enforcement** — the `safenpm run --enforce-runtime` hook covers CJS `require()` only. ESM `import` resolution goes through a different mechanism (`--experimental-loader`) and is the 0.2 milestone. CJS is still the majority of npm.
+- **Tarball re-verification against the live npm registry** — npm itself checks integrity-field-matches-tarball during install; the case where an attacker rewrites both the lockfile and the tarball together is uncovered. 0.6 milestone.
+- **Bundler-time plugin attacks** — webpack/vite/esbuild plugins run with full Node permissions outside `safenpm run`. 0.8 milestone.
+- **Syscall-literal native backdoors** — the `.node` byte scanner catches imported symbol names. A binary that calls `syscall(2)` with literal syscall numbers (or uses obfuscated dlsym lookups) won't trip the scan. Defence in depth, not absolute.
+- **External security audit** — none has happened. The macOS sandbox profile in particular is one person's hand-written TinyScheme. Audit is the gating item for 1.0.
 
 Full version path, exit criteria per milestone, and the "what could kill this project" honest section live in [`docs/roadmap.md`](./docs/roadmap.md). The runtime-isolation design surface specifically is in [`docs/runtime-isolation.md`](./docs/runtime-isolation.md).
 

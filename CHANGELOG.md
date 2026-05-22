@@ -6,7 +6,81 @@ project follows [Semantic Versioning](https://semver.org/), with the
 explicit caveat that pre-1.0 (`0.x`) releases may break compatibility
 on any minor bump.
 
-## [0.1.0] — 2026-05-22
+## [Unreleased] — security hardening sprint, 2026-05-22
+
+Four-phase sprint that closes the largest items from the 0.1.0
+SECURITY.md "Misses (important)" section, deliberately ahead of the
+0.2 release because the gaps were too tractable to defer.
+
+### Added
+
+- **Symlink audit** (`src/analysis/symlinks.ts`) — walks every
+  installed package, flags symlinks whose target escapes the
+  package directory or uses an absolute path. Closes the "ship a
+  symlink to /etc/passwd, then read it from postinstall" pattern
+  that path-allow-list sandboxes can leak.
+- **Native `.node` byte scanner** (`src/analysis/native.ts`) — for
+  every compiled addon under node_modules, scans the binary for
+  dangerous imported symbol names (`execvp` / `socket` / `dlopen` /
+  `LoadLibraryA` / …) as null-terminated string-table matches.
+  Works across Mach-O / ELF / PE without parsing the file format.
+  Closes the dlopen-blind-spot in the install sandbox.
+- **Runtime enforcement** (`src/runtime/{policy,enforce}.ts` +
+  `safenpm run --enforce-runtime`) — `node --require`-loaded hook
+  that intercepts every CJS `require()`, looks up the calling
+  package via the existing `packageOfFile()` helper, consults a
+  policy file, and throws `SafenpmDenied` for any disallowed
+  builtin. Default deny-list: `child_process`, `https`, `http`,
+  `http2`, `net`, `dgram`, `tls`, `dns`, `vm`, `worker_threads`,
+  `cluster`, `inspector`, `module`, `wasi`, `v8`. Per-package
+  overrides via `.safenpm-policy.json`. Denies logged to
+  `~/.safenpm/enforce-denies/<ts>-<pid>.json`. End-to-end verified
+  on a fixture that does `require('child_process')`.
+- **`safenpm run --generate-policy [--from-trace]`** — writes a
+  `.safenpm-policy.json` from either the built-in defaults or the
+  most recent runtime trace, locking each package to exactly the
+  dangerous builtins it was already using.
+- **`(trace …)` directive in the macOS strict sandbox profile** —
+  defence-in-depth on top of the SIGABRT fix. The sandbox-exec
+  trace log is parsed after the run; any `deny` line escalates a
+  classifier "clean" verdict to "blocked". Catches the narrow
+  "kernel denied a syscall but the child handled the error
+  gracefully (exit 0, empty stderr)" case.
+- **11 new static-analysis rules** covering ESM-aware require
+  forms (`node:` prefix), HTTP/2, WebSocket, TLS, IPv4 literals,
+  vm module, `process.binding()`, worker_threads, cluster,
+  Buffer-from-hex obfuscation, `bash -c "$(...)"` shell-command-
+  substitution, and (the cheapest pattern-matcher bypass)
+  **dynamic require/import with non-literal arguments**.
+- **Nested-dependency static analysis** — `findInstallScripts`
+  recurses into `node_modules/<a>/node_modules/<b>/...` up to 8
+  levels deep. Sandbox already executed nested install scripts;
+  only the static analyzer was missing them.
+- **Env-var regex stripping** — `cleanEnv` now strips any var
+  matching `*_TOKEN` / `*_SECRET` / `*_KEY` / `*_PASSWORD` / `*_PWD`
+  / `*_CREDENTIALS` in addition to the existing explicit list.
+  Keep-list (`SSH_AUTH_SOCK`, `XDG_*`) prevents native-compile
+  breakage.
+
+### Tests
+
+- **373 unit tests** total (+45 from this sprint: 17 policy, 10
+  native, 9 symlinks, 7 env, 2 steps).
+- **24 / 24 golden snapshots** (regenerated for the expanded help
+  text covering `safenpm run`).
+- **90 / 90 integration tests.**
+
+### Changed
+
+- SECURITY.md "What's in scope" / "What's NOT in scope" sections
+  rewritten to reflect what just landed. The "Misses (important)"
+  list shrunk by 4 items: runtime code execution, compiled-payload
+  symbol scan, escape symlinks, and the `process.binding()` /
+  dynamic-require bypass. New misses surfaced: ESM enforcement
+  (deferred to 0.4), syscall-literal native backdoors, build-time
+  bundler plugins.
+
+
 
 This is the first pre-release after the in-tree refactor. The package
 was previously labeled `1.0.0` on npm; that version label was retired
