@@ -1,5 +1,17 @@
 # Cloudflare Pages applies redirects in order; first match wins.
 # See: https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# NOTE: cross-host redirects (www → apex) are NOT handled by this
+# file — `_redirects` only rewrites paths within the same hostname.
+# To canonicalise www.safenpm.dev → safenpm.dev, either:
+#
+#   (a) remove `www.safenpm.dev` from Pages → safenpm → Custom domains
+#       (dashboard), then the www DNS record can be a redirect rule, or
+#   (b) add a Cloudflare Bulk Redirect rule at the zone level:
+#       Rules → Redirect Rules → `https://www.safenpm.dev/<path>`
+#       → `https://safenpm.dev/<path>` 301.
+#
+# This file stays as the source-of-truth for any future same-host
+# rewrites that get added.
 
-# Canonicalise to the apex domain — no duplicate-content on www.
-https://www.safenpm.dev/*   https://safenpm.dev/:splat   301
+# (no rules yet)
