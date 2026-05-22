@@ -13,6 +13,7 @@ import type { DiffResult } from '../analysis/diffing'
 import type { LockfileAuditResult } from '../analysis/lockfile'
 import type { NpmAuditResult } from '../analysis/npm-audit'
 import type { ReputationSummary } from '../analysis/reputation'
+import type { SymlinkAuditResult } from '../analysis/symlinks'
 import type { TyposquatResult } from '../analysis/typosquat'
 import type { MaintainerInfo } from '../network/maintainer'
 import type { ThreatIntelResult } from '../network/threatintel'
@@ -34,6 +35,7 @@ export type Finding =
   | { kind: 'lockfile';      result: LockfileAuditResult }
   | { kind: 'reputation';    summary: ReputationSummary }
   | { kind: 'npm-audit';     result: NpmAuditResult }
+  | { kind: 'symlinks';      result: SymlinkAuditResult }
   | { kind: 'analysis';      results: AnalysisResult[] }
   | { kind: 'diffs';         results: DiffResult[] }
   | { kind: 'threat-intel';  results: ThreatIntelResult[] }

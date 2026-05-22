@@ -58,6 +58,8 @@ export interface Reporter {
   reputationResult(s: ReputationSummary): void
   npmAuditHeader(): void
   npmAuditResult(r: NpmAuditResult): void
+  symlinkHeader(): void
+  symlinkResult(findings: ReadonlyArray<{ pkg: string; symlink: string; target: string; reason: string }>): void
   analysisHeader(): void
   analysisResult(r: AnalysisResult): void
   diffHeader(): void

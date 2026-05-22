@@ -208,6 +208,19 @@ export function createHumanReporter(): Reporter {
       }
     },
 
+    symlinkHeader() {
+      console.log()
+      console.log(`${CYAN}  →${RESET} symlink audit...`)
+      console.log()
+    },
+    symlinkResult(findings) {
+      for (const f of findings) {
+        const c = f.reason === 'escapes-package' ? RED : YELLOW
+        const icon = f.reason === 'escapes-package' ? '⚠' : '!'
+        console.log(`  ${c}${icon}${RESET} ${BOLD}${f.pkg}${RESET}  ${DIM}${f.symlink}${RESET} → ${c}${f.target}${RESET}  ${DIM}(${f.reason})${RESET}`)
+      }
+    },
+
     analysisHeader() {
       console.log()
       console.log(`${CYAN}  →${RESET} static analysis of install scripts...`)

@@ -36,6 +36,8 @@ export function createJsonReporter(): Reporter {
     reputationResult() {},
     npmAuditHeader() {},
     npmAuditResult() {},
+    symlinkHeader() {},
+    symlinkResult() {},
     analysisHeader() {},
     analysisResult() {},
     diffHeader() {},

@@ -20,6 +20,7 @@ import { diffScripts, significantDiffs } from '../analysis/diffing'
 import { auditLockfile } from '../analysis/lockfile'
 import { runNpmAudit } from '../analysis/npm-audit'
 import { scoreReputationFromNodeModules } from '../analysis/reputation'
+import { auditSymlinks } from '../analysis/symlinks'
 import { checkAllTyposquats } from '../analysis/typosquat'
 import { loadTyposquatIgnores } from '../config/allowlist'
 import { checkMaintainerChanges } from '../network/maintainer'
@@ -57,6 +58,16 @@ export const npmAuditStep: Step<{ kind: 'npm-audit'; result: ReturnType<typeof r
   run: (ctx) => ({ kind: 'npm-audit', result: runNpmAudit(ctx.cwd) }),
 }
 
+// Symlink audit runs on EVERY install, not just --scan. The cost is
+// low (walk node_modules, readlink each link) and the attack pattern
+// (symlink-escape to /etc/passwd / ~/.ssh / etc) is real and pre-
+// install — there's no benefit to deferring detection to --scan.
+export const symlinkStep: Step<{ kind: 'symlinks'; result: ReturnType<typeof auditSymlinks> }> = {
+  name: 'symlinks',
+  enabled: () => true,
+  run: (ctx) => ({ kind: 'symlinks', result: auditSymlinks(ctx.nodeModulesPath) }),
+}
+
 export const analysisStep: Step<{ kind: 'analysis'; results: ReturnType<typeof analyzeAll> }> = {
   name: 'analysis',
   enabled: () => true,
@@ -92,6 +103,7 @@ export const maintainerStep: Step<{ kind: 'maintainers'; results: Awaited<Return
  * Run these BEFORE the early-return "no scripts found" branch.
  */
 export const PRE_SCRIPT_STEPS: readonly Step[] = [
+  symlinkStep,        // always — escape symlinks are an install-time-only check
   typosquatStep,
   lockfileStep,
   reputationStep,

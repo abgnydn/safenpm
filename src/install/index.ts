@@ -132,6 +132,15 @@ export async function install(opts: InstallOptions): Promise<void> {
 // ── Helpers: reporting ────────────────────────────────────────────────
 
 function reportPreFindings(findings: readonly Finding[], reporter: Reporter): void {
+  const sym = byKind(findings, 'symlinks')
+  if (sym) {
+    const dangerous = sym.result.findings.filter((f) => f.reason !== 'broken')
+    if (dangerous.length > 0) {
+      reporter.symlinkHeader()
+      reporter.symlinkResult(dangerous)
+    }
+  }
+
   const typo = byKind(findings, 'typosquats')
   if (typo && typo.results.length > 0) {
     reporter.typosquatHeader()

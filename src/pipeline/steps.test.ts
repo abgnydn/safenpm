@@ -6,6 +6,7 @@ import {
   lockfileStep,
   reputationStep,
   npmAuditStep,
+  symlinkStep,
   analysisStep,
   diffStep,
   threatIntelStep,
@@ -28,9 +29,9 @@ const ctx: AnalysisContext = {
 }
 
 describe('pipeline step lists', () => {
-  it('PRE_SCRIPT_STEPS includes typosquat / lockfile / reputation / npm-audit (in order)', () => {
+  it('PRE_SCRIPT_STEPS leads with the always-on symlink audit then the --scan-only checks', () => {
     expect(PRE_SCRIPT_STEPS.map((s) => s.name)).toEqual([
-      'typosquats', 'lockfile', 'reputation', 'npm-audit',
+      'symlinks', 'typosquats', 'lockfile', 'reputation', 'npm-audit',
     ])
   })
 
@@ -49,11 +50,13 @@ describe('step.enabled gating', () => {
     }
   })
 
-  it('analysis + threat-intel always run regardless of --scan', () => {
+  it('analysis + threat-intel + symlink always run regardless of --scan', () => {
     expect(analysisStep.enabled({ ...baseOpts, scan: false })).toBe(true)
     expect(threatIntelStep.enabled({ ...baseOpts, scan: false })).toBe(true)
+    expect(symlinkStep.enabled({ ...baseOpts, scan: false })).toBe(true)
     expect(analysisStep.enabled({ ...baseOpts, scan: true })).toBe(true)
     expect(threatIntelStep.enabled({ ...baseOpts, scan: true })).toBe(true)
+    expect(symlinkStep.enabled({ ...baseOpts, scan: true })).toBe(true)
   })
 })
 

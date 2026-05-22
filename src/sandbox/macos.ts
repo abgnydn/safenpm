@@ -13,7 +13,9 @@
  * normally contain newlines so we don't try to defend against them.
  */
 import { spawnSync } from 'child_process'
+import fs from 'fs'
 import os from 'os'
+import path from 'path'
 import type { PackageScript, SandboxResult } from '../types'
 import { cleanEnv } from './env'
 import { classify, SANDBOX_TIMEOUT_MS } from './classify'
@@ -133,7 +135,20 @@ export function isAvailable(): boolean {
 
 export function run(pkg: PackageScript, strict: boolean): SandboxResult {
   const start = Date.now()
-  const profile = strict ? buildStrictProfile(pkg.path) : LOOSE_PROFILE
+  // Per-invocation trace file. sandbox-exec writes every deny event
+  // it processed here (whether the process recovers gracefully or
+  // not). Post-run we scan it for unexpected denies that the child's
+  // stderr would have missed — that was the original SIGABRT-flake
+  // class of bug (kill happened, but stderr stayed empty so classify
+  // saw no signal). We surface ANY entry in the trace as a sandbox
+  // violation indicator regardless of exit code.
+  const traceFile = path.join(
+    os.tmpdir(),
+    `safenpm-sb-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.log`,
+  )
+  const profile = strict
+    ? withTrace(buildStrictProfile(pkg.path), traceFile)
+    : LOOSE_PROFILE
 
   const result = spawnSync(
     'sandbox-exec',
@@ -146,5 +161,78 @@ export function run(pkg: PackageScript, strict: boolean): SandboxResult {
     },
   )
 
-  return classify(pkg, result, Date.now() - start)
+  const decision = classify(pkg, result, Date.now() - start)
+  return augmentWithTrace(decision, traceFile)
+}
+
+/**
+ * Insert a `(trace …)` directive at the top of a strict profile.
+ * sandbox-exec accumulates ALL evaluated operations into the file —
+ * we only care about denies. The file is cleaned up immediately
+ * after we've parsed it.
+ */
+function withTrace(profile: string, traceFile: string): string {
+  // `(trace …)` lives just under `(version 1)` to apply to the whole
+  // profile. The string-escape of the path matches the convention used
+  // elsewhere in buildStrictProfile.
+  const escaped = traceFile.replace(/"/g, '\\"')
+  return profile.replace('(version 1)', `(version 1)\n(trace "${escaped}")`)
+}
+
+/**
+ * If the sandbox trace recorded any deny operations, override the
+ * classifier's "clean" verdict — even when the child's stderr was
+ * empty and exit code was 0. The kernel killed something quietly and
+ * we don't want to call that clean.
+ *
+ * Best-effort cleanup of the trace file regardless of outcome.
+ */
+function augmentWithTrace(result: SandboxResult, traceFile: string): SandboxResult {
+  // Cap how much we read — a long install script can produce a
+  // multi-MB trace and we don't need the whole thing to look for
+  // deny lines.
+  const MAX_TRACE_READ = 2 * 1024 * 1024
+  let traceContent = ''
+  try {
+    if (fs.existsSync(traceFile)) {
+      const stat = fs.statSync(traceFile)
+      if (stat.size <= MAX_TRACE_READ) {
+        traceContent = fs.readFileSync(traceFile, 'utf8')
+      } else {
+        const fd = fs.openSync(traceFile, 'r')
+        const buf = Buffer.alloc(MAX_TRACE_READ)
+        fs.readSync(fd, buf, 0, MAX_TRACE_READ, 0)
+        fs.closeSync(fd)
+        traceContent = buf.toString('utf8')
+      }
+      fs.unlinkSync(traceFile)
+    }
+  } catch { /* best effort */ }
+
+  if (!traceContent) return result
+
+  // The trace format is one s-expression per evaluated op. Denies
+  // appear as either `;# DENY …` headers or as ops with a deny
+  // disposition. We do the cheapest possible match.
+  const hasDeny = /\bdeny\b/i.test(traceContent)
+  if (!hasDeny) return result
+
+  // Already classified as blocked → nothing to change.
+  if (result.blocked) {
+    return {
+      ...result,
+      output: result.output + `\n[safenpm] sandbox-exec trace recorded deny events (confirmed block).`,
+    }
+  }
+
+  // Was clean, but the kernel denied something — flip to blocked.
+  // First deny line gives us a reason hint.
+  const firstDeny = traceContent.split('\n').find((l) => /deny/i.test(l)) ?? ''
+  const looksNetwork = /network/i.test(firstDeny)
+  return {
+    ...result,
+    blocked: true,
+    reason: looksNetwork ? 'network' : 'filesystem',
+    output: result.output + `\n[safenpm] sandbox trace recorded a quiet deny — escalating clean→blocked.\n  trace excerpt: ${firstDeny.slice(0, 200)}`,
+  }
 }
