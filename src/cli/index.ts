@@ -19,6 +19,7 @@ const COMMANDS: Record<string, () => Promise<CommandModule>> = {
   diff:     () => import('./commands/diff'),
   audit:    () => import('./commands/audit'),
   trace:    () => import('./commands/trace'),
+  run:      () => import('./commands/run'),
 }
 
 async function main(): Promise<number> {

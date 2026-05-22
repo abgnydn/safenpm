@@ -20,6 +20,8 @@ export const HELP_TEXT = `
     safenpm trace [--json] -- <command> [args...]
     safenpm trace --diff [--json]
     safenpm trace --list [--json]
+    safenpm run [--enforce-runtime] [--json] -- <command> [args...]
+    safenpm run --generate-policy [--from-trace]
 
   options:
     --dry-run, -n         show what would be sandboxed/fixed without running
@@ -46,6 +48,12 @@ export const HELP_TEXT = `
                           new critical builtin (child_process/https/net/...)
                           appeared in a previously-clean package
     trace --list          list recent traces in ~/.safenpm/pkg-traces/
+    run --enforce-runtime -- <cmd>
+                          run <cmd> with per-package runtime policy enforced;
+                          require() of any denied builtin throws SafenpmDenied
+    run --generate-policy [--from-trace]
+                          write a .safenpm-policy.json (default deny-list, or
+                          locked to what the latest trace was already doing)
 
   examples:
     safenpm install axios
