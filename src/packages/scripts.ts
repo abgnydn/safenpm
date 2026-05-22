@@ -4,31 +4,59 @@ import { PackageScript } from '../types'
 
 const HOOKS = ['preinstall', 'install', 'postinstall', 'prepare']
 
+/**
+ * Cap on how deep we recurse into `node_modules/<a>/node_modules/<b>/...`
+ * when looking for install scripts. With modern flat hoisting most
+ * trees terminate at depth 1; nested copies happen on version
+ * conflicts. 8 is the maximum nesting depth npm allows for hoisting
+ * conflict resolution in practice, so this matches reality without
+ * blowing the stack on a pathological tree.
+ */
+const MAX_NESTED_DEPTH = 8
+
 export function findInstallScripts(nodeModulesPath: string): PackageScript[] {
   const results: PackageScript[] = []
+  walk(nodeModulesPath, results, 0)
+  return results
+}
 
-  if (!fs.existsSync(nodeModulesPath)) return results
+function walk(nodeModulesPath: string, out: PackageScript[], depth: number): void {
+  if (depth > MAX_NESTED_DEPTH) return
+  if (!fs.existsSync(nodeModulesPath)) return
 
-  const entries = fs.readdirSync(nodeModulesPath, { withFileTypes: true })
+  let entries: fs.Dirent[]
+  try {
+    entries = fs.readdirSync(nodeModulesPath, { withFileTypes: true })
+  } catch {
+    return
+  }
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue
     if (entry.name.startsWith('.')) continue
 
     if (entry.name.startsWith('@')) {
-      // scoped package — go one level deeper
+      // scoped package — one level deeper
       const scopePath = path.join(nodeModulesPath, entry.name)
-      const scoped = fs.readdirSync(scopePath, { withFileTypes: true })
+      let scoped: fs.Dirent[]
+      try {
+        scoped = fs.readdirSync(scopePath, { withFileTypes: true })
+      } catch {
+        continue
+      }
       for (const s of scoped) {
         if (!s.isDirectory()) continue
-        probe(path.join(scopePath, s.name), `${entry.name}/${s.name}`, results)
+        const pkgPath = path.join(scopePath, s.name)
+        probe(pkgPath, `${entry.name}/${s.name}`, out)
+        // recurse into any nested node_modules at this package
+        walk(path.join(pkgPath, 'node_modules'), out, depth + 1)
       }
     } else {
-      probe(path.join(nodeModulesPath, entry.name), entry.name, results)
+      const pkgPath = path.join(nodeModulesPath, entry.name)
+      probe(pkgPath, entry.name, out)
+      walk(path.join(pkgPath, 'node_modules'), out, depth + 1)
     }
   }
-
-  return results
 }
 
 function probe(pkgPath: string, fallbackName: string, out: PackageScript[]) {

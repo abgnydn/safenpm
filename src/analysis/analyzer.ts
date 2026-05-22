@@ -128,6 +128,83 @@ const RULES: Rule[] = [
     description: 'Raw socket access',
     pattern: /require\s*\(\s*['"](net|dgram)['"]\s*\)/,
   },
+  {
+    id: 'net-tls',
+    severity: 'medium',
+    description: 'TLS socket — possible TLS-tunnel exfiltration',
+    pattern: /require\s*\(\s*['"](tls|node:tls)['"]\s*\)/,
+  },
+  {
+    id: 'net-http2',
+    severity: 'high',
+    description: 'HTTP/2 client in install script',
+    pattern: /require\s*\(\s*['"](http2|node:http2)['"]\s*\)/,
+  },
+  {
+    id: 'net-websocket',
+    severity: 'high',
+    description: 'WebSocket client — long-lived network channel',
+    pattern: /require\s*\(\s*['"]ws['"]\s*\)|new\s+WebSocket\s*\(/,
+  },
+  {
+    id: 'net-ip-literal',
+    severity: 'medium',
+    description: 'Hardcoded IPv4 literal — bypasses DNS-based detection',
+    // Excludes loopback (127.x) and wildcard (0.x) where false-positive cost is huge.
+    pattern: /\b(?!(127|0)\.\d{1,3}\.\d{1,3}\.\d{1,3}\b)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/,
+  },
+
+  // ── Native / module-system backdoors ──
+  {
+    id: 'exec-vm',
+    severity: 'high',
+    description: 'Uses the vm module — arbitrary code execution in a new context',
+    pattern: /require\s*\(\s*['"](vm|node:vm)['"]\s*\)/,
+  },
+  {
+    id: 'exec-process-binding',
+    severity: 'high',
+    description: 'process.binding() — undocumented backdoor to native code',
+    pattern: /process\.binding\s*\(/,
+  },
+  {
+    id: 'exec-worker-threads',
+    severity: 'medium',
+    description: 'Spawns worker_threads — isolated thread with full Node access',
+    pattern: /require\s*\(\s*['"](worker_threads|node:worker_threads)['"]\s*\)/,
+  },
+  {
+    id: 'exec-cluster',
+    severity: 'medium',
+    description: 'cluster module — spawn isolated process workers',
+    pattern: /require\s*\(\s*['"](cluster|node:cluster)['"]\s*\)/,
+  },
+  {
+    id: 'exec-dynamic-require',
+    severity: 'high',
+    description: 'Dynamic require with non-literal argument — pattern-matcher bypass',
+    // Matches `require(<not-a-simple-string-literal>)` — concatenation,
+    // variable lookup, template literal with expressions, etc.
+    pattern: /require\s*\(\s*(?!['"][^'"]+['"]\s*\))/,
+  },
+  {
+    id: 'exec-dynamic-import',
+    severity: 'high',
+    description: 'Dynamic import() with non-literal argument',
+    pattern: /\bimport\s*\(\s*(?!['"][^'"]+['"]\s*\))/,
+  },
+  {
+    id: 'obfuscation-buffer-hex',
+    severity: 'high',
+    description: 'Buffer.from(..., "hex") — possible obfuscated payload',
+    pattern: /Buffer\.from\s*\([^)]*,\s*['"]hex['"]/i,
+  },
+  {
+    id: 'exfil-curl-bash-substitution',
+    severity: 'high',
+    description: 'Shell command substitution into bash — curl-pipe-bash variant',
+    pattern: /\b(?:bash|sh|zsh)\s+-c\s+["'`]?\$\(/,
+  },
 
   // ── Low severity: worth noting ──
   {
