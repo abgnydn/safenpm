@@ -1,0 +1,27 @@
+# Cloudflare Pages applies these headers to matching paths.
+# See: https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  # Force HTTPS for two years across all subdomains.
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  # Don't let the page be iframed by anyone else (clickjacking).
+  X-Frame-Options: DENY
+  # Already set by CF, restated for explicitness.
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Disable the riskiest opt-in capabilities; we don't use any of them.
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
+  # Tight CSP — we vendor lucide, never use eval, and the only outbound
+  # fetch is to our own /api/v1/* endpoints. cloudflareinsights.com is
+  # the auto-injected analytics beacon; allow it explicitly.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# Long-cache the immutable static assets.
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+/og.png
+  Cache-Control: public, max-age=86400
+/og.svg
+  Cache-Control: public, max-age=86400
+/favicon.svg
+  Cache-Control: public, max-age=86400

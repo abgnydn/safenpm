@@ -1,0 +1,5 @@
+# Cloudflare Pages applies redirects in order; first match wins.
+# See: https://developers.cloudflare.com/pages/configuration/redirects/
+
+# Canonicalise to the apex domain — no duplicate-content on www.
+https://www.safenpm.dev/*   https://safenpm.dev/:splat   301
