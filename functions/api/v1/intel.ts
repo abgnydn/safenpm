@@ -1,14 +1,14 @@
 /**
  * POST /api/v1/intel
  *
- * Batch reputation lookup. Called by the safenpm CLI during `npm install`
- * with up to 500 (package, version) pairs per request. Returns whether
- * each package has crossed the report threshold.
+ * Batch reputation lookup. Called by the safenpm CLI during `npm
+ * install` with up to 500 (package, version) pairs per request.
+ * Returns whether each package has crossed the report threshold.
  *
- * Port of api/v1/intel.ts from Vercel Node to Cloudflare Pages Functions.
- * Thresholds and scoring logic unchanged.
+ * Thresholds and scoring logic unchanged from the Upstash-era
+ * implementation; only the storage backend swapped.
  */
-import { getRedis, FLAGGED_KEY, json, preflight, type Env } from '../../_lib/redis'
+import { getStorage, FLAGGED_PREFIX, json, preflight, type Env } from '../../_lib/storage'
 import { parseIntelQuery, parseFlaggedEntry } from '../../_lib/validate'
 import type { IntelResult } from '../../_lib/types'
 
@@ -62,8 +62,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const query = parseIntelQuery(body)
   if (!query) return json({ error: 'invalid query' }, { status: 400 })
 
-  const redis = getRedis(env)
-  if (!redis) {
+  const storage = getStorage(env)
+  if (!storage) {
     return json({ results: emptyResults(query.packages, false) })
   }
 
@@ -71,8 +71,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const results: IntelResult[] = []
 
     for (const pkg of query.packages) {
-      const key = `${pkg.name}@${pkg.version}`
-      const entry = parseFlaggedEntry(await redis.hget<string>(FLAGGED_KEY, key))
+      const field = `${pkg.name}@${pkg.version}`
+      const entry = parseFlaggedEntry(await storage.hashGet(FLAGGED_PREFIX, field))
 
       if (!entry) {
         results.push({

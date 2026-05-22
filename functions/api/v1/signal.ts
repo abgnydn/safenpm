@@ -3,15 +3,16 @@
  *
  * Receives a malicious-package report from the safenpm CLI. Validates the
  * payload, rate-limits per machineId, dedupes identical (machineId, pkg)
- * reports in a 24h window, and updates the aggregate entry in Upstash.
+ * reports in a 24h window, and updates the aggregate entry in KV.
  *
- * Sybil-resistance: `distinctReporters` is backed by a Redis SET of the
- * machineIds that have ever reported this package@version. SADD returns
- * 1 only for new members, so the counter genuinely reflects distinct
- * identities — not just non-deduped reports. The validator's machineId
- * entropy floor (`MIN_MACHINE_ID_LEN`) raises the cost of generating
- * additional Sybil identities, but does not eliminate it; pair this with
- * the conservative flag threshold in intel.ts.
+ * Sybil-resistance: `distinctReporters` is backed by a KV-modelled
+ * "set" of machineIds (a JSON `string[]` keyed by pkg@ver). On each
+ * report we check membership before incrementing, so the counter
+ * genuinely reflects distinct identities — not just non-deduped
+ * reports. The validator's machineId entropy floor
+ * (`MIN_MACHINE_ID_LEN`) raises the cost of generating additional
+ * Sybil identities, but does not eliminate it; pair this with the
+ * conservative flag threshold in intel.ts.
  *
  * Reports under the literal id `'anonymous'` never increment the
  * counter — the server treats anonymous reporters as a single shared
@@ -19,24 +20,24 @@
  * of identifier persistence.
  */
 import {
-  getRedis,
-  FLAGGED_KEY,
-  STATS_KEY,
+  getStorage,
+  FLAGGED_PREFIX,
+  STATS_PREFIX,
   RECENT_KEY,
   CATEGORIES_KEY,
+  RATE_LIMIT_PREFIX,
+  DEDUP_PREFIX,
+  REPORTERS_PREFIX,
   json,
   preflight,
   type Env,
-} from '../../_lib/redis'
+} from '../../_lib/storage'
 import { parseSignal, parseFlaggedEntry } from '../../_lib/validate'
 import type { FlaggedEntry } from '../../_lib/types'
 
-const RATE_LIMIT_KEY = 'safenpm:ratelimit'
 const RATE_LIMIT_WINDOW = 3600 // 1 hour
 const RATE_LIMIT_MAX = 20 // signals per machineId per hour
-const DEDUP_KEY = 'safenpm:dedup'
 const DEDUP_TTL = 86400 // 24 hours
-const REPORTERS_KEY = 'safenpm:reporters' // SET of distinct machineIds per pkg@ver
 const REPORTERS_TTL = 90 * 86400 // 90 days
 
 export const onRequestOptions = preflight
@@ -52,8 +53,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const signal = parseSignal(body)
   if (!signal) return json({ error: 'invalid signal' }, { status: 400 })
 
-  const redis = getRedis(env)
-  if (!redis) {
+  const storage = getStorage(env)
+  if (!storage) {
     // Graceful degradation: accept the report but don't persist it.
     // The CLI treats this as success so it doesn't spam the user.
     return json({ accepted: true, stored: false }, { status: 202 })
@@ -61,9 +62,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   try {
     // Rate limit per machineId.
-    const rateLimitKey = `${RATE_LIMIT_KEY}:${signal.machineId}`
-    const currentCount = await redis.get<number>(rateLimitKey)
-    if (currentCount !== null && currentCount >= RATE_LIMIT_MAX) {
+    const rateLimitKey = `${RATE_LIMIT_PREFIX}:${signal.machineId}`
+    const currentCount = Number(await storage.getString(rateLimitKey)) || 0
+    if (currentCount >= RATE_LIMIT_MAX) {
       return json(
         { error: 'rate limit exceeded', retryAfter: RATE_LIMIT_WINDOW },
         { status: 429 }
@@ -71,48 +72,44 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
 
     // Dedupe: same machine, same package@version in 24h.
-    const dedupKey = `${DEDUP_KEY}:${signal.machineId}:${signal.package}@${signal.version}`
-    const alreadyReported = await redis.get(dedupKey)
+    const dedupKey = `${DEDUP_PREFIX}:${signal.machineId}:${signal.package}@${signal.version}`
+    const alreadyReported = await storage.getString(dedupKey)
     if (alreadyReported) {
       return json({ accepted: true, stored: false, reason: 'duplicate' })
     }
 
-    // Track distinct reporters as a SET. Anonymous reports never join
+    // Track distinct reporters as a set. Anonymous reports never join
     // the set, so they cannot inflate distinctReporters at all.
-    const key = `${signal.package}@${signal.version}`
-    const reportersKey = `${REPORTERS_KEY}:${key}`
+    const field = `${signal.package}@${signal.version}`
+    const reportersKey = `${REPORTERS_PREFIX}:${field}`
     let isNewReporter = false
     if (signal.machineId !== 'anonymous') {
-      const added = await redis.sadd(reportersKey, signal.machineId)
-      isNewReporter = added === 1
-      await redis.expire(reportersKey, REPORTERS_TTL)
+      isNewReporter = await storage.setAdd(reportersKey, signal.machineId, { ttlSec: REPORTERS_TTL })
     }
 
-    const existing = parseFlaggedEntry(await redis.hget<string>(FLAGGED_KEY, key))
-
+    const existing = parseFlaggedEntry(await storage.hashGet(FLAGGED_PREFIX, field))
     const entry: FlaggedEntry = existing
       ? mergeSignal(existing, signal, isNewReporter)
       : freshEntry(signal, isNewReporter)
 
     await Promise.all([
-      redis.hset(FLAGGED_KEY, { [key]: JSON.stringify(entry) }),
-      redis.hincrby(STATS_KEY, 'totalSignals', 1),
-      redis.lpush(RECENT_KEY, JSON.stringify({
+      storage.hashSet(FLAGGED_PREFIX, field, JSON.stringify(entry)),
+      storage.hashIncrBy(STATS_PREFIX, 'totalSignals', 1),
+      storage.listPush(RECENT_KEY, JSON.stringify({
         package: signal.package,
         version: signal.version,
         reason: signal.reason,
         platform: signal.platform,
         timestamp: signal.timestamp,
       })),
-      redis.ltrim(RECENT_KEY, 0, 99),
-      redis.zincrby(CATEGORIES_KEY, 1, signal.reason),
-      redis.incr(rateLimitKey),
-      redis.expire(rateLimitKey, RATE_LIMIT_WINDOW),
-      redis.set(dedupKey, '1', { ex: DEDUP_TTL }),
+      storage.listTrim(RECENT_KEY, 0, 99),
+      storage.sortedIncrBy(CATEGORIES_KEY, 1, signal.reason),
+      storage.incrWithTtl(rateLimitKey, RATE_LIMIT_WINDOW),
+      storage.setString(dedupKey, '1', { ttlSec: DEDUP_TTL }),
     ])
 
-    const allFlagged = await redis.hlen(FLAGGED_KEY)
-    await redis.hset(STATS_KEY, { totalPackages: allFlagged })
+    const allFlagged = await storage.hashLen(FLAGGED_PREFIX)
+    await storage.hashSet(STATS_PREFIX, 'totalPackages', String(allFlagged))
 
     return json({ accepted: true, stored: true })
   } catch (err) {

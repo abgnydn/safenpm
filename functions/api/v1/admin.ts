@@ -1,24 +1,25 @@
 /**
  * POST /api/v1/admin
  *
- * Manual bearer-token-authenticated operations on the threat intel store.
- * Only used by operators via curl — not wired into any client.
+ * Manual bearer-token-authenticated operations on the threat intel
+ * store. Only used by operators via curl — not wired into any client.
  *
  *   { "action": "flush" }                       → wipe everything
  *   { "action": "remove", "package": "x@1.0" }  → unflag one package
  *
- * Port of api/v1/admin.ts.
+ * KV-backed (Cloudflare-native); the previous Upstash Redis backing
+ * was retired in the 0.1 refactor.
  */
 import {
-  getRedis,
-  FLAGGED_KEY,
-  STATS_KEY,
+  getStorage,
+  FLAGGED_PREFIX,
+  STATS_PREFIX,
   RECENT_KEY,
   CATEGORIES_KEY,
   json,
   preflight,
   type Env,
-} from '../../_lib/redis'
+} from '../../_lib/storage'
 
 export const onRequestOptions = preflight
 
@@ -31,12 +32,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const redis = getRedis(env)
-  if (!redis) return json({ error: 'redis not configured' }, { status: 500 })
+  const storage = getStorage(env)
+  if (!storage) return json({ error: 'storage not configured' }, { status: 500 })
 
-  let body: any
+  let body: { action?: string; package?: string }
   try {
-    body = await request.json()
+    body = await request.json() as { action?: string; package?: string }
   } catch {
     return json({ error: 'invalid JSON' }, { status: 400 })
   }
@@ -44,19 +45,19 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const action = body?.action
   if (action === 'flush') {
     await Promise.all([
-      redis.del(FLAGGED_KEY),
-      redis.del(STATS_KEY),
-      redis.del(RECENT_KEY),
-      redis.del(CATEGORIES_KEY),
+      storage.hashClear(FLAGGED_PREFIX),
+      storage.hashClear(STATS_PREFIX),
+      storage.del(RECENT_KEY),
+      storage.sortedClear(CATEGORIES_KEY),
     ])
     return json({ flushed: true })
   }
 
   if (action === 'remove' && typeof body?.package === 'string') {
     const pkg = body.package
-    await redis.hdel(FLAGGED_KEY, pkg)
-    const count = await redis.hlen(FLAGGED_KEY)
-    await redis.hset(STATS_KEY, { totalPackages: count })
+    await storage.hashDel(FLAGGED_PREFIX, pkg)
+    const count = await storage.hashLen(FLAGGED_PREFIX)
+    await storage.hashSet(STATS_PREFIX, 'totalPackages', String(count))
     return json({ removed: pkg })
   }
 

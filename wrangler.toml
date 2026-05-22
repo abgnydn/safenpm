@@ -2,30 +2,30 @@
 #
 # The static site lives in `site/` and the Pages Functions live in
 # `functions/`. Cloudflare auto-discovers both layouts; this file just
-# captures the project name, compatibility date, and the env-var keys
-# the functions expect so the deploy is reproducible from source
-# instead of a dashboard click-through.
+# captures the project name, compatibility date, KV binding, and the
+# env-var keys the functions expect so the deploy is reproducible from
+# source instead of a dashboard click-through.
 #
-# Production secrets (Upstash REST URL/token, ADMIN_SECRET) are NOT
-# stored here. Provision them once with:
-#   wrangler pages secret put UPSTASH_REDIS_REST_URL   --project-name=safenpm
-#   wrangler pages secret put UPSTASH_REDIS_REST_TOKEN --project-name=safenpm
-#   wrangler pages secret put ADMIN_SECRET             --project-name=safenpm
+# Production secrets (ADMIN_SECRET) are NOT stored here. Provision with:
+#   wrangler pages secret put ADMIN_SECRET --project-name=safenpm
 
 name = "safenpm"
 compatibility_date = "2025-09-23"
 pages_build_output_dir = "site"
 
 # Pages Functions inherit the project's compatibility date.
-# `nodejs_compat` is required because functions/_lib/redis.ts pulls in
-# @upstash/redis, which uses fetch under the hood but expects Node-style
-# globals at module init.
+# `nodejs_compat` is required because some of our helpers expect
+# Node-like globals (e.g. `Buffer` via base64).
 compatibility_flags = ["nodejs_compat"]
 
-# These keys must exist as secrets in the Pages project; see comment
-# above for the wrangler invocations. Listing them here makes it obvious
-# at PR-review time when a new dependency is added.
-#
-#   UPSTASH_REDIS_REST_URL   — Upstash Redis REST endpoint
-#   UPSTASH_REDIS_REST_TOKEN — Upstash Redis REST auth token
-#   ADMIN_SECRET             — bearer token for /api/v1/admin
+# KV namespace for threat-intel persistence. Created with:
+#   wrangler kv namespace create SAFENPM_KV
+# Replaces the original Upstash Redis binding — Cloudflare-native,
+# eliminates the third-party signup and stays inside the same auth
+# boundary as the Pages project itself.
+[[kv_namespaces]]
+binding = "SAFENPM_KV"
+id = "d8d743a19e704437aad649a3863311a5"
+
+# Required secret (set via `wrangler pages secret put`):
+#   ADMIN_SECRET — bearer token for /api/v1/admin
