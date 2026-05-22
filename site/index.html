@@ -1857,7 +1857,15 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 
   function animateNumber(el, target, duration) {
     const start = parseInt(el.textContent) || 0;
-    if (start === target) return;
+    // If the visible text already matches the target (e.g. "0" → 0
+    // tick), skip. Don't compare numerically — `parseInt("--") === 0`
+    // produced a bug where the placeholder never got replaced when
+    // the API returned 0 signals.
+    if (el.textContent === target.toLocaleString()) return;
+    if (start === target) {
+      el.textContent = target.toLocaleString();
+      return;
+    }
     const startTime = performance.now();
     function tick(now) {
       const elapsed = now - startTime;
