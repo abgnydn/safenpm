@@ -85,19 +85,30 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   }
 
   try {
-    const [stats, recent, categories, allFlagged] = await Promise.all([
-      storage.hashGetAll(STATS_PREFIX),
+    // Read STATS counters via direct hashGet rather than hashGetAll.
+    // KV's `list` API has a separate propagation lag from `get` (up
+    // to 60s), so a stats summary that uses list-enumeration shows
+    // stale 0s for ~a minute after a fresh write. Direct reads of
+    // the known field keys avoid that lag — important because the
+    // dashboard headline numbers are the first thing users see.
+    const [
+      totalSignalsRaw, totalPackagesRaw, recent, categories, allFlagged,
+    ] = await Promise.all([
+      storage.hashGet(STATS_PREFIX, 'totalSignals'),
+      storage.hashGet(STATS_PREFIX, 'totalPackages'),
       storage.listRange(RECENT_KEY, 0, RECENT_LIMIT - 1),
       storage.sortedRange(CATEGORIES_KEY, { rev: true }),
+      // topFlagged still uses hashGetAll — we accept the list lag
+      // there since the dashboard is casual browsing, not realtime,
+      // and the per-edge response is already cached for 30s.
       storage.hashGetAll(FLAGGED_PREFIX),
     ])
 
     const flaggedEntries = summarizeFlagged(allFlagged)
     const categoryList: CategoryCount[] = categories.map(([reason, count]) => ({ reason, count }))
     const recentList = decodeRecent(recent)
-
-    const totalSignals = Number(stats['totalSignals'] ?? 0)
-    const totalPackages = Number(stats['totalPackages'] ?? 0)
+    const totalSignals = Number(totalSignalsRaw ?? 0)
+    const totalPackages = Number(totalPackagesRaw ?? 0)
 
     return json(
       {
