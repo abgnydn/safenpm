@@ -20,6 +20,7 @@
   <a href="https://safenpm.dev"><strong>Website</strong></a> ·
   <a href="./SECURITY.md"><strong>Threat model</strong></a> ·
   <a href="./docs/architecture.md"><strong>Architecture</strong></a> ·
+  <a href="./docs/roadmap.md"><strong>Roadmap</strong></a> ·
   <a href="#quick-start"><strong>Quick start</strong></a> ·
   <a href="./CHANGELOG.md"><strong>Changelog</strong></a>
 </p>
@@ -231,12 +232,12 @@ Architecture map: [`docs/architecture.md`](./docs/architecture.md). Contribution
 
 ## What's NOT shipping in 0.1
 
-- **ESM trace coverage** — the runtime tracer only sees CJS `require()`. Adding an `--experimental-loader` for ESM is the next milestone.
-- **Runtime enforcement** — `trace` is observe-only by design. Wrapping exports in a deny-by-default proxy is a multi-month design + ecosystem-compat exercise; deliberately deferred to 0.2+.
-- **External security audit** — none has happened. The macOS sandbox profile in particular is one person's hand-written TinyScheme, and a SIGABRT-classification bug in the result-tagging code went undetected for months until it was fixed in 0.1.0.
+- **ESM trace coverage** — the runtime tracer only sees CJS `require()`. Targeted for 0.2.
+- **Runtime enforcement** — `trace` is observe-only by design. Deny-by-default proxy wrapping is targeted for 0.3.
+- **External security audit** — none has happened. The macOS sandbox profile in particular is one person's hand-written TinyScheme, and a SIGABRT-classification bug in the result-tagging code went undetected for months until it was fixed in 0.1.0. Audit is the gating item for 0.4 → 1.0.
 - **Production adoption** — see the top-of-README status banner.
 
-See [`docs/runtime-isolation.md`](./docs/runtime-isolation.md) for the runtime-isolation roadmap.
+Full version path, exit criteria per milestone, and the "what could kill this project" honest section live in [`docs/roadmap.md`](./docs/roadmap.md). The runtime-isolation design surface specifically is in [`docs/runtime-isolation.md`](./docs/runtime-isolation.md).
 
 ---
 
