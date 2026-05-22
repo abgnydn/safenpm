@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540" width="1200" height="540" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="100%" stop-color="#0f1019"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1e1e2e" stroke-width="0.5" opacity="0.4"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="540" fill="url(#bg)"/>
+  <rect width="1200" height="540" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="600" y="48" text-anchor="middle" font-size="26" font-weight="700" fill="#e4e4ef">safenpm trace --diff</text>
+  <text x="600" y="74" text-anchor="middle" font-size="14" fill="#8888a0">runtime require() observability · catches "this version started using child_process"</text>
+
+  <!-- Left card: before -->
+  <g transform="translate(80, 130)">
+    <rect width="430" height="350" rx="14" fill="#12121a" stroke="#1e1e2e"/>
+    <text x="24" y="38" font-size="13" font-weight="600" fill="#8888a0" letter-spacing="0.5">PREVIOUS TRACE</text>
+    <text x="24" y="64" font-family="ui-monospace, monospace" font-size="13" fill="#555570">2026-05-21T13:32:20Z</text>
+
+    <line x1="24" y1="86" x2="406" y2="86" stroke="#1e1e2e"/>
+
+    <text x="24" y="118" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#e4e4ef">demo-pkg</text>
+    <text x="24" y="146" font-family="ui-monospace, monospace" font-size="12" fill="#8888a0">builtin:</text>
+    <g transform="translate(40, 168)" font-family="ui-monospace, monospace" font-size="13">
+      <rect width="32" height="22" rx="11" fill="#06b6d4" fill-opacity="0.12"/>
+      <text x="16" y="16" text-anchor="middle" fill="#06b6d4">fs</text>
+    </g>
+
+    <text x="24" y="226" font-family="ui-monospace, monospace" font-size="12" fill="#8888a0">package:</text>
+    <text x="40" y="252" font-family="ui-monospace, monospace" font-size="13" fill="#555570">(none)</text>
+
+    <text x="24" y="320" font-size="12" fill="#22c55e">✓ benign</text>
+  </g>
+
+  <!-- Diff arrow with magnifier -->
+  <g transform="translate(540, 280)">
+    <line x1="0" y1="20" x2="100" y2="20" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="50" y="6" text-anchor="middle" font-size="12" fill="#06b6d4" font-weight="600">DIFF</text>
+    <text x="50" y="56" text-anchor="middle" font-size="11" fill="#8888a0">version bump</text>
+  </g>
+
+  <!-- Right card: after -->
+  <g transform="translate(690, 130)">
+    <rect width="430" height="350" rx="14" fill="#12121a" stroke="#ef4444" stroke-opacity="0.5"/>
+    <text x="24" y="38" font-size="13" font-weight="600" fill="#8888a0" letter-spacing="0.5">CURRENT TRACE</text>
+    <text x="24" y="64" font-family="ui-monospace, monospace" font-size="13" fill="#555570">2026-05-22T11:53:57Z</text>
+
+    <line x1="24" y1="86" x2="406" y2="86" stroke="#1e1e2e"/>
+
+    <text x="24" y="118" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#e4e4ef">demo-pkg</text>
+    <text x="24" y="146" font-family="ui-monospace, monospace" font-size="12" fill="#8888a0">builtin:</text>
+    <g transform="translate(40, 168)" font-family="ui-monospace, monospace" font-size="13">
+      <rect width="32" height="22" rx="11" fill="#06b6d4" fill-opacity="0.12"/>
+      <text x="16" y="16" text-anchor="middle" fill="#06b6d4">fs</text>
+    </g>
+    <g transform="translate(82, 168)" font-family="ui-monospace, monospace" font-size="13">
+      <rect width="56" height="22" rx="11" fill="#ef4444" fill-opacity="0.18" stroke="#ef4444" stroke-opacity="0.5"/>
+      <text x="28" y="16" text-anchor="middle" fill="#ef4444" font-weight="600">+ https</text>
+    </g>
+    <g transform="translate(148, 168)" font-family="ui-monospace, monospace" font-size="13">
+      <rect width="124" height="22" rx="11" fill="#ef4444" fill-opacity="0.18" stroke="#ef4444" stroke-opacity="0.5"/>
+      <text x="62" y="16" text-anchor="middle" fill="#ef4444" font-weight="600">+ child_process</text>
+    </g>
+
+    <text x="24" y="226" font-family="ui-monospace, monospace" font-size="12" fill="#8888a0">package:</text>
+    <text x="40" y="252" font-family="ui-monospace, monospace" font-size="13" fill="#555570">(none)</text>
+
+    <text x="24" y="320" font-size="12" font-weight="600" fill="#ef4444">⚠ 2 critical builtins added — exit 1</text>
+  </g>
+</svg>

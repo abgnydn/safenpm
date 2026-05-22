@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="100%" stop-color="#0f1019"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1e1e2e" stroke-width="0.5" opacity="0.5"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#555570"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <rect width="1200" height="720" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="600" y="56" text-anchor="middle" font-size="26" font-weight="700" fill="#e4e4ef">safenpm install pipeline</text>
+  <text x="600" y="82" text-anchor="middle" font-size="14" fill="#8888a0">10 phases · everything outside the sandbox is read-only · no network until phase 8</text>
+
+  <!-- ── Input box ── -->
+  <g transform="translate(440, 110)">
+    <rect width="320" height="56" rx="10" fill="#0d0d14" stroke="#1e1e2e" stroke-width="1.5"/>
+    <text x="160" y="36" text-anchor="middle" font-family="ui-monospace, monospace" font-size="14" fill="#e4e4ef">$ safenpm install lodash axios</text>
+  </g>
+
+  <!-- ── Phase 1: npm install --ignore-scripts ── -->
+  <g transform="translate(120, 200)">
+    <rect width="960" height="56" rx="10" fill="#12121a" stroke="#1e1e2e"/>
+    <circle cx="32" cy="28" r="16" fill="#22c55e" fill-opacity="0.12" stroke="#22c55e"/>
+    <text x="32" y="33" text-anchor="middle" font-size="14" font-weight="700" fill="#22c55e">1</text>
+    <text x="64" y="24" font-size="15" font-weight="600" fill="#e4e4ef">npm install --ignore-scripts</text>
+    <text x="64" y="44" font-size="13" fill="#8888a0">resolves the dep tree and materialises node_modules — nothing executes yet</text>
+  </g>
+
+  <!-- ── Phase 2-4: Pre-script analysis pipeline ── -->
+  <g transform="translate(120, 280)">
+    <rect width="960" height="170" rx="10" fill="#12121a" stroke="#1e1e2e"/>
+    <text x="20" y="32" font-size="13" font-weight="600" fill="#06b6d4" letter-spacing="0.5">PRE-SCRIPT PIPELINE  · runs before any install script</text>
+
+    <g transform="translate(20, 50)">
+      <rect width="220" height="100" rx="8" fill="#0d0d14" stroke="#1e1e2e"/>
+      <circle cx="22" cy="22" r="12" fill="#22c55e" fill-opacity="0.15"/>
+      <text x="22" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#22c55e">2</text>
+      <text x="42" y="27" font-size="14" font-weight="600" fill="#e4e4ef">typosquats</text>
+      <text x="14" y="50" font-size="12" fill="#8888a0">edit-distance + scope-</text>
+      <text x="14" y="66" font-size="12" fill="#8888a0">confusion against the</text>
+      <text x="14" y="82" font-size="12" fill="#8888a0">top-N npm packages</text>
+    </g>
+
+    <g transform="translate(255, 50)">
+      <rect width="220" height="100" rx="8" fill="#0d0d14" stroke="#1e1e2e"/>
+      <circle cx="22" cy="22" r="12" fill="#22c55e" fill-opacity="0.15"/>
+      <text x="22" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#22c55e">3</text>
+      <text x="42" y="27" font-size="14" font-weight="600" fill="#e4e4ef">lockfile audit</text>
+      <text x="14" y="50" font-size="12" fill="#8888a0">non-registry URLs (git+,</text>
+      <text x="14" y="66" font-size="12" fill="#8888a0">file:), missing/weak</text>
+      <text x="14" y="82" font-size="12" fill="#8888a0">integrity hashes</text>
+    </g>
+
+    <g transform="translate(490, 50)">
+      <rect width="220" height="100" rx="8" fill="#0d0d14" stroke="#1e1e2e"/>
+      <circle cx="22" cy="22" r="12" fill="#22c55e" fill-opacity="0.15"/>
+      <text x="22" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#22c55e">4</text>
+      <text x="42" y="27" font-size="14" font-weight="600" fill="#e4e4ef">reputation</text>
+      <text x="14" y="50" font-size="12" fill="#8888a0">offline heuristic from</text>
+      <text x="14" y="66" font-size="12" fill="#8888a0">package.json metadata</text>
+      <text x="14" y="82" font-size="12" fill="#8888a0">(maintainers, license, …)</text>
+    </g>
+
+    <g transform="translate(725, 50)">
+      <rect width="220" height="100" rx="8" fill="#0d0d14" stroke="#1e1e2e"/>
+      <circle cx="22" cy="22" r="12" fill="#22c55e" fill-opacity="0.15"/>
+      <text x="22" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#22c55e">5</text>
+      <text x="42" y="27" font-size="14" font-weight="600" fill="#e4e4ef">npm audit</text>
+      <text x="14" y="50" font-size="12" fill="#8888a0">real CVE advisories</text>
+      <text x="14" y="66" font-size="12" fill="#8888a0">from the npm registry,</text>
+      <text x="14" y="82" font-size="12" fill="#8888a0">severity-tiered output</text>
+    </g>
+  </g>
+
+  <!-- ── Phase 5-7: Post-script analysis ── -->
+  <g transform="translate(120, 480)">
+    <rect width="960" height="100" rx="10" fill="#12121a" stroke="#1e1e2e"/>
+    <text x="20" y="32" font-size="13" font-weight="600" fill="#06b6d4" letter-spacing="0.5">POST-SCRIPT PIPELINE  · only if install scripts exist</text>
+
+    <g transform="translate(20, 50)" font-size="13" fill="#e4e4ef">
+      <text font-weight="600">6</text>
+      <text x="20" y="0">static analysis</text>
+      <text x="20" y="16" font-size="11" fill="#8888a0">curl / wget / eval / base64 patterns</text>
+    </g>
+    <g transform="translate(245, 50)" font-size="13" fill="#e4e4ef">
+      <text font-weight="600">7</text>
+      <text x="20" y="0">behavioural diff</text>
+      <text x="20" y="16" font-size="11" fill="#8888a0">vs. cached previous version</text>
+    </g>
+    <g transform="translate(490, 50)" font-size="13" fill="#e4e4ef">
+      <text font-weight="600">8</text>
+      <text x="20" y="0">threat intel</text>
+      <text x="20" y="16" font-size="11" fill="#8888a0">community network query</text>
+    </g>
+    <g transform="translate(725, 50)" font-size="13" fill="#e4e4ef">
+      <text font-weight="600">9</text>
+      <text x="20" y="0">maintainer change</text>
+      <text x="20" y="16" font-size="11" fill="#8888a0">npm publisher diff</text>
+    </g>
+  </g>
+
+  <!-- ── Phase 10: Sandbox + report ── -->
+  <g transform="translate(120, 610)">
+    <rect width="610" height="76" rx="10" fill="#12121a" stroke="#22c55e" stroke-opacity="0.5"/>
+    <circle cx="36" cy="38" r="20" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="36" y="43" text-anchor="middle" font-size="14" font-weight="700" fill="#22c55e">10</text>
+    <text x="76" y="34" font-size="15" font-weight="600" fill="#e4e4ef">sandboxed execution</text>
+    <text x="76" y="54" font-size="13" fill="#8888a0">sandbox-exec (macOS) / firejail (Linux) / Windows Firewall · deny network + sensitive paths</text>
+  </g>
+
+  <g transform="translate(750, 610)">
+    <rect width="330" height="76" rx="10" fill="#12121a" stroke="#1e1e2e"/>
+    <circle cx="36" cy="38" r="20" fill="#06b6d4" fill-opacity="0.15" stroke="#06b6d4" stroke-width="1.5"/>
+    <text x="36" y="43" text-anchor="middle" font-size="11" font-weight="700" fill="#06b6d4">log</text>
+    <text x="76" y="34" font-size="15" font-weight="600" fill="#e4e4ef">audit + signal</text>
+    <text x="76" y="54" font-size="13" fill="#8888a0">~/.safenpm/audit.log + anon report</text>
+  </g>
+
+  <!-- Arrows -->
+  <line x1="600" y1="170" x2="600" y2="194" stroke="#555570" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="600" y1="260" x2="600" y2="274" stroke="#555570" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="600" y1="454" x2="600" y2="474" stroke="#555570" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="600" y1="584" x2="600" y2="604" stroke="#555570" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>

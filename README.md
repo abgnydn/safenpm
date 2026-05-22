@@ -1,197 +1,247 @@
 <p align="center">
+  <img src="./docs/diagrams/hero.svg" alt="safenpm — sandboxed npm installs" width="100%">
+</p>
+
+<p align="center">
   <a href="https://github.com/abgnydn/safenpm/actions/workflows/ci.yml"><img src="https://github.com/abgnydn/safenpm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/@abgunaydin/safenpm"><img src="https://img.shields.io/npm/v/@abgunaydin/safenpm" alt="npm version"></a>
   <a href="https://safenpm.dev"><img src="https://img.shields.io/badge/live-safenpm.dev-6ea8ff" alt="Live"></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue" alt="Platform">
-  <img src="https://img.shields.io/badge/node-%3E%3D18-green" alt="Node">
+  <img src="https://img.shields.io/badge/node-%3E%3D20-green" alt="Node">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="License"></a>
 </p>
 
-# safenpm
-
-**Drop-in `npm install` replacement that runs every postinstall script inside an OS sandbox with no network access and a restricted filesystem, plus static-analysis, typosquat, lockfile, and reputation checks.**
-
-Many malicious npm packages exfiltrate credentials, open reverse shells, or steal SSH keys via install-time scripts. safenpm wraps `npm install` with a defense-in-depth pipeline: static analysis, sandboxed execution, typosquat detection, maintainer-change alerts, lockfile integrity, and an experimental opt-in threat-intelligence network.
-
-> **Status: 0.1.0 — pre-release, solo-maintained, unaudited.** safenpm is useful as a belt-and-suspenders layer in front of `npm install`. It does **not** replace runtime sandboxing or formal supply-chain reviews. See [SECURITY.md](./SECURITY.md) for the honest threat model — including what it doesn't catch.
+<p align="center"><strong>
+  Drop-in <code>npm install</code> replacement that runs every postinstall script inside an OS sandbox<br>
+  with no network access and a restricted filesystem.
+</strong></p>
 
 <p align="center">
-  <a href="https://safenpm.dev"><strong>Website</strong></a> · <a href="https://safenpm.dev/showcase.html"><strong>Showcase</strong></a> · <a href="./SECURITY.md"><strong>Threat model</strong></a> · <a href="#quick-start"><strong>Quick start</strong></a>
+  <a href="https://safenpm.dev"><strong>Website</strong></a> ·
+  <a href="./SECURITY.md"><strong>Threat model</strong></a> ·
+  <a href="./docs/architecture.md"><strong>Architecture</strong></a> ·
+  <a href="#quick-start"><strong>Quick start</strong></a> ·
+  <a href="./CHANGELOG.md"><strong>Changelog</strong></a>
 </p>
+
+> [!IMPORTANT]
+> **Status: `0.1.0` — pre-release, solo-maintained, unaudited, zero known external users.** Useful as a belt-and-suspenders layer in front of `npm install`. **Does not** replace runtime sandboxing or formal supply-chain review. See [SECURITY.md](./SECURITY.md) and [`docs/runtime-isolation.md`](./docs/runtime-isolation.md) for the honest scope.
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
+# install
 npm install -g @abgunaydin/safenpm
 
-# Use instead of npm install
+# use instead of `npm install`
 safenpm install
 ```
 
-That's it. Your install scripts now run inside a sandbox with no network access and restricted filesystem. If anything suspicious is detected, safenpm blocks it and tells you exactly what happened.
+That's it. Install scripts now run inside an OS sandbox with no network and restricted filesystem. If anything tries to phone home, write to `~/.ssh`, or trip the static-analysis heuristics, safenpm blocks it and tells you exactly what happened.
 
-## How It Works
-
-```
-safenpm install
-    │
-    ├─ 1. npm install --ignore-scripts     (safe — nothing executes)
-    ├─ 2. Threat intel query               (check community network — always runs)
-    ├─ 3. Static analysis                  (scan scripts for red flags)
-    ├─ 4. Typosquat detection              (catch axois → axios)
-    ├─ 5. Maintainer change alerts         (flag account takeovers)
-    ├─ 6. Lockfile integrity check         (detect URL/hash tampering)
-    ├─ 7. Reputation scoring               (rate each package 0-100)
-    ├─ 8. Sandboxed execution              (run scripts with no network/fs)
-    ├─ 9. Anonymous signal reporting        (alert the network if blocked)
-    └─ 10. Audit logging                   (everything to ~/.safenpm/)
+```bash
+# also useful
+safenpm install --scan         # full deep scan (typosquat / lockfile / reputation / npm audit)
+safenpm trace -- node app.js   # record what every dep require()s at runtime
+safenpm trace --diff           # compare two newest traces, exit 1 on critical builtin drift
+safenpm doctor                 # health report with letter grade
+safenpm fix --dry-run          # preview auto-fixes for typosquats and blocked packages
 ```
 
-Threat intelligence runs on **every install** — not just in scan mode. If any dependency has been flagged by the community, you will see a warning immediately.
+---
 
-## Key Features
+## How it works
 
-### Sandbox Isolation
-Every postinstall script runs inside an OS-level sandbox. Network access is fully denied. Filesystem access is restricted — scripts cannot read `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.npmrc`, or shell histories. Sensitive env vars (`NPM_TOKEN`, `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, etc.) are stripped before execution.
+<p align="center">
+  <img src="./docs/diagrams/pipeline.svg" alt="safenpm install pipeline" width="100%">
+</p>
 
-### Static Analysis Engine
-Before anything runs, scripts are scanned for: network tools (`curl`, `wget`, `nc`), credential access (`~/.ssh`, `process.env`), code execution patterns (`eval()`, base64 decoding, `| sh`), and obfuscation (hex/unicode escapes). Each package receives a risk score (0-100).
+Every step before phase 10 runs against `node_modules` with **scripts disabled** — nothing the package author wrote has executed yet. Phase 10 is the only place untrusted code runs, and it runs inside the OS sandbox.
 
-### Typosquat Detection
-Catches common squatting patterns — character swaps, missing hyphens, scope confusion (`@evil/lodash`) — using edit-distance analysis and a curated list of popular packages.
+| # | Phase | When | What it catches |
+|---|---|---|---|
+| 1 | `npm install --ignore-scripts` | always | dependency resolution, nothing executes |
+| 2 | **typosquats** | `--scan` | `axois` for `axios`, `@evil/lodash` for `lodash`, `c0lors` for `colors`, `rnoment` for `moment` |
+| 3 | **lockfile audit** | `--scan` | `git+`/`file:`/custom-registry resolved URLs, missing or weak integrity hashes |
+| 4 | **reputation** | `--scan` | offline `package.json` heuristic (maintainer count, license, repo, age) — not a substitute for CVE data |
+| 5 | **`npm audit`** | `--scan` | real CVE advisories from the npm registry, severity-tiered |
+| 6 | **static analysis** | always | `curl`/`wget`/`nc`, `~/.ssh` reads, `eval()`, `\| sh`, base64 + hex/unicode obfuscation |
+| 7 | **behavioural diff** | `--scan` | new install scripts vs. the cached previous version |
+| 8 | **threat intel** | always | the safenpm community network (opt-in, default-on, low-adoption today) |
+| 9 | **maintainer change** | `--scan` | npm publisher changed between the previous version and this one |
+| 10 | **sandboxed execution** | always | the only step that actually runs the install script |
 
-### Maintainer Change Monitoring
-Flags packages where maintainers changed recently, a common indicator of account takeover attacks.
+---
 
-### Lockfile Integrity
-Validates `package-lock.json` for non-registry URLs, missing integrity hashes, and other signs of lockfile injection.
+## Sandbox layer
 
-### Reputation Scoring
-Scores every package 0-100 based on maintainer count, license, repository presence, dependency weight, and maturity. Aggregates into a project-level health grade.
+| Platform | Backend | Status |
+|---|---|---|
+| macOS | `sandbox-exec` (built-in) — TinyScheme deny-default profile + explicit DNS-related mach-service denies | full support |
+| Linux | `firejail` | full support |
+| Windows (admin) | Windows Firewall + ACLs | experimental |
+| Windows (WSL) | WSL + firejail | experimental |
+| none of the above | last-resort fallback (warned to user) | no sandboxing |
 
-### Experimental threat-intelligence network
+The macOS profile denies network egress and the specific Mach services (`com.apple.dnssd-uds`, `mDNSResponder`, `networkd`, `cfnetwork.AuthBrokerAgent`, …) that an attacker would use to resolve a hostname before the broader `(deny network*)` rule fires. Sensitive env vars (`NPM_TOKEN`, `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, …) are stripped before exec.
 
-**Hosted at [safenpm.dev](https://safenpm.dev).** The network is opt-in (default-on), runs on a single Cloudflare Pages + Upstash Redis deployment, has no SLA, and is operated by the maintainer. **Adoption is currently low, so flags are rare.** Disable outgoing reports with `--no-report`.
+---
 
-Signal flow on a block: `block → anonymous report → other safenpm users querying the same pkg@version see the aggregate`. The blocked package name, script hash, and block reason are sent. No personally-identifying information leaves your machine.
+## Runtime tracer (observe-only)
+
+The largest gap in install-time sandboxing is that it doesn't isolate code at `require()` time. `safenpm trace` partially closes that:
+
+<p align="center">
+  <img src="./docs/diagrams/trace-diff.svg" alt="safenpm trace --diff" width="100%">
+</p>
+
+```bash
+safenpm trace -- node app.js         # record one trace
+safenpm trace -- npm test            # record another (or run after a version bump)
+safenpm trace --diff                 # report new builtins/packages per dep
+safenpm trace --list                 # show recent traces in ~/.safenpm/pkg-traces/
+```
+
+`trace --diff` exits **1** if any dependency starts touching a critical builtin (`child_process`, `https`, `http2`, `net`, `dns`, `vm`, `worker_threads`, `cluster`, `tls`, `dgram`, `http`, `inspector`, `module`) that it didn't touch before. Drop it into CI as a regression detector for post-takeover dependency mutation.
+
+CJS only — ESM `import` goes through a different mechanism and is not currently captured. See [`docs/runtime-isolation.md`](./docs/runtime-isolation.md) for the full roadmap.
+
+---
+
+## Threat model
+
+<p align="center">
+  <img src="./docs/diagrams/threat-model.svg" alt="threat model — catches vs misses" width="100%">
+</p>
+
+Short form above; the long form is in [`SECURITY.md`](./SECURITY.md). The most important entry on the right side is **runtime code execution** — many famous npm incidents (event-stream, ua-parser-js, xz-style backdoors) execute their payload at `require()` time, not install time. Mitigated partially by the runtime tracer (observe-only); enforcement is on the roadmap, not in 0.1.
+
+---
+
+## Threat-intelligence network
+
+Hosted at [safenpm.dev](https://safenpm.dev) — Cloudflare Pages + Upstash Redis, single-region, no SLA, **adoption ≈ 0** today. Opt-in by default; disable outgoing reports with `--no-report`. Signal flow on a block: `block → anonymous report → other safenpm users querying the same pkg@version see the aggregate`.
 
 When a flagged package is detected:
 
-```
-  -> querying threat intelligence network...
+```text
+  → querying threat intelligence network...
 
-  ! COMMUNITY ALERT  evil-pkg@0.0.1
+  ⚠ COMMUNITY ALERT  evil-pkg@0.0.1
     INTEL  47 reports from other developers
     INTEL  top reason: credential exfiltration
            also: network access, reverse shell
            first seen: 2026-03-28  last report: 4m ago
-    -> This package was flagged by the safenpm community network.
-    -> Consider removing it or verifying it is legitimate.
+    → This package was flagged by the safenpm community network.
+    → Consider removing it or verifying it is legitimate.
 ```
 
-**Sybil-resistance is partial — do not rely on community flagging as your only signal.** Anti-abuse safeguards in place:
-- **Rate limit** — 20 signals per machineId per hour.
-- **24-hour dedup** — repeat reports of the same `(machineId, pkg@version)` collapse.
-- **Distinct-reporter set** — `distinctReporters` is a Redis SET of machineIds, so the same machine cannot inflate the count across windows.
-- **MachineId entropy floor** — reports with machineIds shorter than 16 chars or outside `[a-zA-Z0-9_-]` are rejected, raising the cost of trivial Sybil generation.
-- **Threshold-based flagging** — a non-curated package requires **≥5** distinct reporters; a curated "high-value-target" package requires **≥15**. The curated list is a hand-maintained set of ~50 names; there is no live download-count check.
-- **Script-hash consistency** — packages reported with >3 distinct script hashes are treated as inconsistent and not flagged.
+Sybil-resistance is partial — **do not rely on community flagging as your only signal**:
 
-These mitigations raise the cost of manipulation; they do not eliminate it. A motivated attacker can still generate enough valid machineIds to flag a target.
+- **Rate limit** — 20 signals per machineId per hour
+- **24-hour dedup** — repeat reports of the same `(machineId, pkg@version)` collapse
+- **Distinct-reporter set** — `distinctReporters` is a Redis SET, so the same machine cannot inflate the count across windows
+- **MachineId entropy floor** — `< 16 chars` or outside `[a-zA-Z0-9_-]` rejected
+- **Threshold-based flagging** — `≥ 5` distinct reporters for non-curated, `≥ 15` for the curated ~50 high-value-target list
+- **Script-hash consistency** — `> 3` distinct script hashes treated as inconsistent and not flagged
 
-### Doctor Command
-Run `safenpm doctor` for a full project health report — letter grade, actionable fixes, and a breakdown of every risk signal across your dependency tree.
+---
 
-## Usage
+## Configuration
 
-```bash
-safenpm install                     # sandboxed install
-safenpm i                           # shorthand
-safenpm i --dry-run                 # preview what would be sandboxed
-safenpm i --allow bcrypt,sharp      # trust specific packages
-safenpm i --json                    # CI-friendly JSON output
-safenpm i --interactive             # prompt on each block
-safenpm audit                       # view past runs
-safenpm doctor                      # project health report
-safenpm scan                        # scan without installing
+`.safenpmrc` (project root or `$HOME`):
+
+```ini
+# packages allowed to run their install scripts without sandboxing
+bcrypt
+sharp
+@mapbox/*
+
+# packages whose typosquat warnings should be suppressed
+!my-internal-react-thing
+!@acme/lodash-utils
 ```
 
-## Platform Support
+CLI flags (full list: `safenpm --help`):
 
-| Platform | Sandbox Backend | Status |
-|----------|----------------|--------|
-| **macOS** | `sandbox-exec` (built-in) | Full support |
-| **Linux** | `firejail` | Full support |
-| **Windows** (admin) | Firewall + ACLs | Experimental |
-| **Windows** (WSL) | WSL + firejail | Experimental |
+| Flag | Description |
+|---|---|
+| `--dry-run`, `-n` | preview what would be sandboxed without running anything |
+| `--allow <pkgs>` | comma-separated allowlist (in addition to `.safenpmrc`) |
+| `--scan`, `-S` | enable deep-scan analyses (typosquat / lockfile / reputation / npm audit) |
+| `--json` | machine-readable JSON output for CI |
+| `--interactive`, `-I` | prompt on each blocked package: retry / skip / abort |
+| `--loose` | network-only sandbox (filesystem stays unrestricted) — needed for some native-compile flows |
+| `--no-report` | disable anonymous threat-intel reports |
 
-## CI Integration
+---
+
+## CI integration
 
 ```yaml
 # GitHub Actions
 - name: Secure install
-  run: npx safenpm install --json --no-report > safenpm-report.json
+  run: npx @abgunaydin/safenpm install --json --no-report > safenpm-report.json
 
-- name: Check for blocks
+- name: Fail on block
   run: |
     blocked=$(jq '.summary.blocked' safenpm-report.json)
     if [ "$blocked" -gt 0 ]; then
-      echo "::error::Supply chain risk detected"
+      echo "::error::Supply-chain risk detected"
+      jq '.packages[] | select(.result=="blocked")' safenpm-report.json
       exit 1
     fi
 ```
 
-## Options
+For longer-term hardening, snapshot a baseline trace per environment and `safenpm trace --diff` on every PR:
 
-| Flag | Description |
-|------|-------------|
-| `--dry-run`, `-n` | Preview without executing |
-| `--allow <pkgs>` | Comma-separated allowlist |
-| `--json` | JSON output for CI |
-| `--interactive`, `-I` | Prompt on each block |
-| `--loose` | Network-only sandbox (skip filesystem restrictions) |
-| `--no-report` | Disable anonymous reporting |
+```yaml
+- name: Runtime tracer baseline (cached)
+  uses: actions/cache@v4
+  with:
+    path: ~/.safenpm/pkg-traces
+    key: safenpm-trace-${{ hashFiles('package-lock.json') }}
 
-## Allowlisting
+- name: Re-trace and diff
+  run: |
+    safenpm trace -- npm test
+    safenpm trace --diff  # exits 1 if any dep starts using child_process etc.
+```
 
-Trust packages via CLI or config file:
+---
+
+## Development
 
 ```bash
-safenpm i --allow bcrypt,sharp,@mapbox/*
+git clone https://github.com/abgnydn/safenpm
+cd safenpm
+npm ci
+npm run build
+npm test                # unit + integration + golden
+npm run test:unit       # vitest only
+npm run test:golden     # CLI byte-identity snapshots
+npm run test:coverage   # v8 coverage report
 ```
 
-Or create a `.safenpmrc` in your project root (or `~/.safenpmrc`):
+Architecture map: [`docs/architecture.md`](./docs/architecture.md). Contributions welcome — every check inside [`src/analysis/`](./src/analysis) is a pure function over a fixture; that's the easiest place to add a new detector. Trickier work lives in [`src/sandbox/`](./src/sandbox) (OS-specific) and [`functions/`](./functions) (the Cloudflare Pages Functions backend).
 
-```
-bcrypt
-sharp
-@mapbox/*
-```
+---
 
-## Threat Model
+## What's NOT shipping in 0.1
 
-See [SECURITY.md](./SECURITY.md) for the full version. Short form:
+- **ESM trace coverage** — the runtime tracer only sees CJS `require()`. Adding an `--experimental-loader` for ESM is the next milestone.
+- **Runtime enforcement** — `trace` is observe-only by design. Wrapping exports in a deny-by-default proxy is a multi-month design + ecosystem-compat exercise; deliberately deferred to 0.2+.
+- **External security audit** — none has happened. The macOS sandbox profile in particular is one person's hand-written TinyScheme, and a SIGABRT-classification bug in the result-tagging code went undetected for months until it was fixed in 0.1.0.
+- **Production adoption** — see the top-of-README status banner.
 
-**Catches:**
-- Malicious `preinstall` / `install` / `postinstall` / `prepare` scripts that exfiltrate credentials, open reverse shells, or touch sensitive paths.
-- Typosquat names (e.g. `axois` for `axios`, scope confusion like `@evil/lodash`).
-- Maintainer-change anomalies on packages you've already snapshotted.
-- Lockfile tampering — non-registry URLs, missing integrity hashes, weak hashes.
+See [`docs/runtime-isolation.md`](./docs/runtime-isolation.md) for the runtime-isolation roadmap.
 
-**Misses (important):**
-- **Runtime code execution.** safenpm does not isolate code that runs when your app imports a package. Many high-profile npm attacks (event-stream, ua-parser-js, xz-style backdoors) execute at `require()` time, not install time. Once an install finishes, the package's code runs with full Node permissions inside your app.
-- Build-time attacks in webpack / babel / esbuild plugins.
-- Pre-existing compromised packages already in your lockfile and matching the legitimate publisher.
-- Targeted attacks crafted with knowledge that you use safenpm (deferred to runtime, sidestep the static patterns, hide in package data).
-- Registry-level compromise.
-- Native binary backdoors that pass the install sandbox but ship pre-compiled malicious code.
-
-## Architecture
-
-Zero production dependencies. Built with TypeScript, compiled to standalone JS. The sandbox layer uses OS-native mechanisms — no Docker, no VMs, no heavy runtimes.
+---
 
 ## License
 
-MIT
+MIT. See [`LICENSE`](./LICENSE).
+
+Built by [Ahmet Barış Günaydın](https://github.com/abgnydn). Issues at [`abgnydn/safenpm`](https://github.com/abgnydn/safenpm/issues).
