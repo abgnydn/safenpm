@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 580" width="1200" height="580" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="100%" stop-color="#0f1019"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1e1e2e" stroke-width="0.5" opacity="0.4"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="580" fill="url(#bg)"/>
+  <rect width="1200" height="580" fill="url(#grid)"/>
+
+  <text x="600" y="56" text-anchor="middle" font-size="26" font-weight="700" fill="#e4e4ef">Threat model — what safenpm actually does</text>
+  <text x="600" y="82" text-anchor="middle" font-size="14" fill="#8888a0">honest scope, including the things it can't catch</text>
+
+  <!-- LEFT: Catches -->
+  <g transform="translate(80, 130)">
+    <rect width="500" height="410" rx="14" fill="#0d180f" stroke="#22c55e" stroke-opacity="0.35"/>
+    <g transform="translate(28, 38)">
+      <circle cx="14" cy="14" r="14" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-opacity="0.6"/>
+      <path d="M 8 14 L 12 18 L 20 10" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="40" y="20" font-size="20" font-weight="700" fill="#22c55e">Catches</text>
+    </g>
+
+    <g transform="translate(28, 96)" font-size="14" fill="#e4e4ef">
+      <g>
+        <text font-weight="600">→ Install-time scripts</text>
+        <text y="20" font-size="12" fill="#8888a0">preinstall / install / postinstall / prepare run in OS sandbox</text>
+      </g>
+      <g transform="translate(0, 56)">
+        <text font-weight="600">→ Network exfiltration on install</text>
+        <text y="20" font-size="12" fill="#8888a0">sandbox-exec denies network + DNS-related mach services</text>
+      </g>
+      <g transform="translate(0, 112)">
+        <text font-weight="600">→ Typosquats</text>
+        <text y="20" font-size="12" fill="#8888a0">scope-confusion, transposition, common substitutions, edit-distance</text>
+      </g>
+      <g transform="translate(0, 168)">
+        <text font-weight="600">→ Lockfile tampering</text>
+        <text y="20" font-size="12" fill="#8888a0">git+/file:/custom-registry URLs, missing or weak integrity hashes</text>
+      </g>
+      <g transform="translate(0, 224)">
+        <text font-weight="600">→ Known CVEs (via npm audit)</text>
+        <text y="20" font-size="12" fill="#8888a0">severity-tiered advisories surfaced in --scan mode</text>
+      </g>
+      <g transform="translate(0, 280)">
+        <text font-weight="600">→ Runtime require() drift</text>
+        <text y="20" font-size="12" fill="#8888a0">safenpm trace --diff flags new critical builtins per package</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- RIGHT: Misses -->
+  <g transform="translate(620, 130)">
+    <rect width="500" height="410" rx="14" fill="#1a0c0c" stroke="#ef4444" stroke-opacity="0.35"/>
+    <g transform="translate(28, 38)">
+      <circle cx="14" cy="14" r="14" fill="#ef4444" fill-opacity="0.18" stroke="#ef4444" stroke-opacity="0.6"/>
+      <path d="M 8 8 L 20 20 M 20 8 L 8 20" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="40" y="20" font-size="20" font-weight="700" fill="#ef4444">Misses (important)</text>
+    </g>
+
+    <g transform="translate(28, 96)" font-size="14" fill="#e4e4ef">
+      <g>
+        <text font-weight="600">× Runtime code execution</text>
+        <text y="20" font-size="12" fill="#8888a0">event-stream / ua-parser-style attacks run at require() time</text>
+      </g>
+      <g transform="translate(0, 56)">
+        <text font-weight="600">× Native binary backdoors</text>
+        <text y="20" font-size="12" fill="#8888a0">precompiled .node modules clear the install sandbox</text>
+      </g>
+      <g transform="translate(0, 112)">
+        <text font-weight="600">× Compromised legit publishers</text>
+        <text y="20" font-size="12" fill="#8888a0">a fresh install with no prior snapshot can't detect the swap</text>
+      </g>
+      <g transform="translate(0, 168)">
+        <text font-weight="600">× Build-time plugin attacks</text>
+        <text y="20" font-size="12" fill="#8888a0">webpack / babel / esbuild loaders run outside the install sandbox</text>
+      </g>
+      <g transform="translate(0, 224)">
+        <text font-weight="600">× Sybil-flooded community flags</text>
+        <text y="20" font-size="12" fill="#8888a0">distinct-reporter floor raises cost, doesn't eliminate poisoning</text>
+      </g>
+      <g transform="translate(0, 280)">
+        <text font-weight="600">× Targeted, safenpm-aware attackers</text>
+        <text y="20" font-size="12" fill="#8888a0">payloads can defer to runtime + sidestep the static patterns</text>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -188,6 +188,31 @@
     .badge .dot.blue { background: var(--blue); }
     .badge .dot.yellow { background: var(--yellow); }
 
+    /* Pre-release status banner — sits under the hero badges. */
+    .status-banner {
+      margin: 32px auto 0;
+      max-width: 760px;
+      padding: 14px 20px;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.06);
+      border-radius: 10px;
+      display: flex; align-items: flex-start; gap: 12px;
+      text-align: left;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-dim);
+    }
+    .status-banner .status-dot {
+      flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%;
+      background: var(--yellow);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+      margin-top: 5px;
+    }
+    .status-banner strong { color: var(--text); font-weight: 600; }
+    .status-banner a { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(6, 182, 212, 0.4); }
+    .status-banner a:hover { text-decoration-color: var(--cyan); }
+    .status-banner code { color: var(--accent); }
+
     /* ── Terminal demo ── */
     .terminal-section { padding: 40px 0 80px; }
 
@@ -274,6 +299,39 @@
     .feature-card p {
       font-size: 14px; color: var(--text-dim); line-height: 1.6;
     }
+    .feature-card .feature-caveat {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      font-size: 12.5px;
+      color: var(--text-dim);
+      opacity: 0.85;
+    }
+    .feature-card .feature-caveat strong { color: var(--yellow); font-weight: 600; }
+    .feature-card code {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.9em;
+      color: var(--accent);
+    }
+
+    /* ── Threat Model section ── */
+    .threat-model-section { padding: 80px 0 40px; }
+    .threat-model-section .container { max-width: 1200px; }
+    .threat-model-svg-wrap {
+      margin: 40px 0 0;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--bg-card);
+    }
+    .threat-model-svg-wrap img { display: block; width: 100%; height: auto; }
+    .threat-model-disclaimer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--text-dim);
+    }
+    .threat-model-disclaimer a { color: var(--cyan); }
 
     /* ── Threat Network ── */
     .threat-network {
@@ -810,6 +868,16 @@
       <span class="badge"><i data-lucide="laptop" style="width:14px;height:14px;color:var(--blue);"></i> macOS + Linux + Windows</span>
       <span class="badge"><i data-lucide="bookmark" style="width:14px;height:14px;color:var(--yellow);"></i> MIT Licensed</span>
     </div>
+
+    <div class="status-banner" role="note" aria-label="Project status">
+      <span class="status-dot"></span>
+      <span class="status-text">
+        <strong>0.1.0 · pre-release · solo-maintained · unaudited · zero known external users yet.</strong>
+        Useful as a belt-and-suspenders layer in front of <code class="mono">npm install</code>.
+        See <a href="https://github.com/abgnydn/safenpm/blob/main/SECURITY.md">SECURITY.md</a>
+        for the honest threat model — including what it doesn't catch.
+      </span>
+    </div>
   </div>
 </section>
 
@@ -864,63 +932,99 @@
         <div class="feature-icon"><i data-lucide="shield"></i></div>
         <h3>Sandbox Enforcement</h3>
         <p>Every postinstall script runs inside an OS-level sandbox with no network access. Malicious packages can't phone home, exfiltrate tokens, or download payloads.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> macOS / Linux only; Windows is experimental. Doesn't protect against payloads that defer execution to <code>require()</code> time (use <code>safenpm run --enforce-runtime</code>).</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i data-lucide="search"></i></div>
         <h3>Static Analysis</h3>
-        <p>19 detection rules scan scripts before execution. Catches curl/wget piping, DNS exfil, env stealing, base64 obfuscation, and SSH key access with severity-weighted scoring.</p>
+        <p>30+ detection rules scan every install script in the dep tree (nested up to 8 levels). Catches curl/wget, DNS/WebSocket/HTTP2/TLS requires, vm + process.binding, dynamic require()/import(), Buffer-from-hex, env exfil, SSH access — severity-weighted.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> patterns can be evaded by an attacker who knows them. Deliberate obfuscation that hides intent until runtime won't trip the static layer.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--red);"><i data-lucide="alert-triangle"></i></div>
         <h3>Typosquat Detection</h3>
-        <p>Levenshtein distance plus 5 attack pattern detectors (char-swap, substitution, scope confusion) check every dependency against 80+ popular npm packages.</p>
+        <p>Levenshtein distance plus 5 attack-pattern detectors (char-swap, substitution, scope confusion) check every dependency against 80+ popular npm packages.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> popular-package list is hand-curated; novel typosquats against less-popular packages aren't caught. False-positive friction can be silenced via <code>!pkg-name</code> in <code>.safenpmrc</code>.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--blue);"><i data-lucide="git-branch"></i></div>
         <h3>Behavioral Diffing</h3>
-        <p>Caches install scripts per project. On upgrade, compares against the cached version to surface new threats, new warnings, and risk score changes.</p>
+        <p>Caches install scripts per project. On upgrade, compares against the cached version to surface new threats, new warnings, and risk-score changes.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> first install of a package has no baseline to compare against. The first time a hijacked legit package lands, this layer can't help.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(234, 179, 8, 0.1); color: var(--yellow);"><i data-lucide="users"></i></div>
         <h3>Maintainer Change Detection</h3>
         <p>Queries the npm registry for publisher history. Alerts you when the person publishing a package changes between versions — a signal of account takeover.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> npm registry response is the only source of truth; if the registry itself is compromised, this signal is too.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i data-lucide="file-lock"></i></div>
         <h3>Lockfile Integrity Audit</h3>
         <p>Parses package-lock.json to catch git dependencies, custom registries, missing integrity hashes, weak algorithms, and stale lockfiles.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> doesn't yet re-verify each tarball's hash against the live npm registry. An attacker who poisons both the tarball and the lockfile clears this check (planned for 0.6).</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(6, 182, 212, 0.1); color: var(--cyan);"><i data-lucide="star"></i></div>
         <h3>Reputation Scoring</h3>
         <p>Scores every package 0-100 based on maintainer count, license, repository presence, dependency weight, and maturity. Aggregates into a project health grade.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> offline heuristic over <code>package.json</code> metadata. Real CVE data comes from the <code>npm audit</code> integration, not this score.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--magenta);"><i data-lucide="globe"></i></div>
         <h3>Decentralized Threat Network</h3>
         <p>When a package is blocked, the signal is anonymously reported to the safenpm network. Every install queries it back — if one developer gets hit, everyone is warned. No identifying data ever leaves your machine.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> adoption is near zero today, so flags are rare. Sybil-resistance is partial (machineId entropy + distinct-reporter set + threshold ≥5). Do <strong>not</strong> rely on community flagging as your only signal.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(34, 197, 94, 0.1); color: var(--accent);"><i data-lucide="eye"></i></div>
+        <h3>Runtime require() Tracer + Enforcer</h3>
+        <p><code>safenpm trace --diff</code> flags when a dep starts using <code>child_process</code> / <code>https</code> / <code>net</code> between versions (CI-gateable post-takeover detection). <code>safenpm run --enforce-runtime</code> blocks disallowed builtins per a <code>.safenpm-policy.json</code> deny-list.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> CJS only. ESM <code>import</code> resolution goes through a different mechanism (planned for 0.2).</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--blue);"><i data-lucide="terminal"></i></div>
         <h3>CI/CD Ready</h3>
         <p>Full JSON output mode, non-zero exit codes on blocks, audit log with auto-rotation, and a standalone scan command for pipeline integration.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> pre-1.0 — JSON shape can change between minor versions. Pin to an exact version in your CI image.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(6, 182, 212, 0.1); color: var(--cyan);"><i data-lucide="activity"></i></div>
         <h3>Doctor Health Report</h3>
         <p>Single command gives your project a letter grade (A+ to F) with weighted scores across 6 categories. Every finding comes with an actionable fix suggestion.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> the grade is an opinion, not a security claim. Use the individual findings, not the letter.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--red);"><i data-lucide="wrench"></i></div>
         <h3>One-Click Auto-Fix</h3>
-        <p>Detected a typosquat? safenpm fix automatically removes the suspect and installs the legitimate package. Preview with --dry-run before applying.</p>
+        <p>Detected a typosquat? <code>safenpm fix</code> automatically removes the suspect and installs the legitimate package. Preview with <code>--dry-run</code> before applying.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> auto-acts on high/medium confidence findings only. Always review with <code>--dry-run</code> first.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--magenta);"><i data-lucide="file-text"></i></div>
         <h3>Package Diff Viewer</h3>
         <p>Git-diff-style output showing exactly what changed in each dependency update — script modifications, added/removed deps, and new files. Snapshot and compare.</p>
+        <p class="feature-caveat"><strong>Caveat:</strong> requires a prior <code>safenpm diff --snapshot</code> to baseline. A clean-room install has nothing to compare against.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- Threat Model — honest split of what safenpm catches vs misses -->
+<section class="threat-model-section" id="threat-model">
+  <div class="container">
+    <div class="section-label" style="color: var(--yellow);">Honest scope</div>
+    <div class="section-title">Threat model — what it actually catches</div>
+    <div class="section-desc">
+      Every security tool has gaps. The list on the right is the one safenpm hasn't closed yet — read it before you assume coverage you don't have.
+    </div>
+    <div class="threat-model-svg-wrap">
+      <img src="/diagrams/threat-model.svg" alt="Threat model: catches install-time scripts, network exfiltration, typosquats, lockfile tampering, known CVEs, runtime require() drift. Misses runtime code execution in ESM, native-binary backdoors via direct syscalls, compromised legit publishers, build-time plugin attacks, Sybil-flooded community flags, and attackers who tailor payloads around safenpm.">
+    </div>
+    <p class="threat-model-disclaimer">
+      Full version at <a href="https://github.com/abgnydn/safenpm/blob/main/SECURITY.md">SECURITY.md</a> ·
+      Runtime-isolation roadmap at <a href="https://github.com/abgnydn/safenpm/blob/main/docs/runtime-isolation.md">docs/runtime-isolation.md</a>
+    </p>
   </div>
 </section>
 
@@ -984,9 +1088,10 @@
   <div class="container">
     <div class="section-label" style="color: var(--cyan);">Transparent Network</div>
     <div class="section-title">Live Threat Intelligence</div>
-    <div class="section-desc">
-      A live, transparent view of the real safenpm threat network. Every signal flowing through the network
-      is visible here in real time — fully transparent, fully anonymous.
+    <div class="section-desc" id="dashboard-desc">
+      Live counters from the safenpm threat-intel backend. Currently bootstrapping —
+      adoption is near zero, so the feed is mostly empty. The numbers below are
+      whatever the live <code class="mono">/api/v1/stats</code> endpoint returns; no demo data.
     </div>
 
     <div class="stats-grid">
@@ -1947,56 +2052,43 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
     var textEl = document.getElementById('status-text');
 
     if (data.live) {
+      var hasData = (data.totalSignals > 0) || (data.topFlagged && data.topFlagged.length > 0);
       statusEl.textContent = 'LIVE';
       dotEl.className = 'dot live';
-      textEl.textContent = 'Connected to safenpm threat network. Updated every 30s.';
+      textEl.textContent = hasData
+        ? 'Connected to safenpm threat-intel backend. Updated every 30s.'
+        : 'Connected — no signals reported yet. Run safenpm install to be the first.';
     } else {
-      statusEl.textContent = 'DEMO';
+      statusEl.textContent = 'OFFLINE';
       dotEl.className = 'dot demo';
-      textEl.textContent = 'Network offline. Showing placeholder data. Connect Upstash Redis to go live.';
+      textEl.textContent = 'Backend unreachable. No demo data shown — see safenpm.dev/api/v1/stats for raw status.';
     }
 
     renderRecent(data.recent);
     renderCategories(data.categories);
   }
 
-  // Demo data when API has no data yet
-  var demoData = {
-    totalSignals: 1247,
-    totalPackages: 83,
-    categories: [
-      { reason: 'network access', count: 412 },
-      { reason: 'credential exfiltration', count: 287 },
-      { reason: 'eval/obfuscation', count: 194 },
-      { reason: 'reverse shell', count: 156 },
-      { reason: 'ssh key theft', count: 112 },
-      { reason: 'env var harvesting', count: 86 }
-    ],
-    recent: [
-      { package: 'ev1l-pkg', version: '0.0.3', reason: 'network access', timestamp: new Date(Date.now() - 120000).toISOString() },
-      { package: 'colrs', version: '1.0.0', reason: 'credential exfiltration', timestamp: new Date(Date.now() - 300000).toISOString() },
-      { package: '@evil/express', version: '4.18.0', reason: 'reverse shell', timestamp: new Date(Date.now() - 900000).toISOString() },
-      { package: 'lod4sh', version: '0.1.0', reason: 'ssh key theft', timestamp: new Date(Date.now() - 1800000).toISOString() },
-      { package: 'requst', version: '2.0.0', reason: 'eval/obfuscation', timestamp: new Date(Date.now() - 3600000).toISOString() },
-      { package: 'axois', version: '1.0.1', reason: 'network access', timestamp: new Date(Date.now() - 7200000).toISOString() }
-    ],
+  // Empty payload shown when the API is unreachable or backend is
+  // unconfigured. Deliberately NOT a fake-demo dataset — surfacing
+  // fabricated numbers from a "Live Threat Intelligence" dashboard
+  // would be dishonest at this stage of the project.
+  var emptyData = {
+    totalSignals: 0,
+    totalPackages: 0,
+    categories: [],
+    recent: [],
     topFlagged: [],
-    live: false
+    live: false,
   };
 
   function fetchStats() {
     fetch(API_BASE + '/stats')
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data.live) {
-          // Redis is connected — show real data (even if zero signals)
-          updateDashboard(data);
-        } else {
-          updateDashboard(demoData);
-        }
+        updateDashboard(data && typeof data === 'object' ? data : emptyData);
       })
       .catch(function() {
-        updateDashboard(demoData);
+        updateDashboard(emptyData);
       });
   }
 
