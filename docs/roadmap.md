@@ -12,13 +12,28 @@ PR or an issue to argue with anything here.
 
 ## TL;DR
 
-| | What | Done when |
-|---|---|---|
-| **0.1.0** ✓ shipped 2026-05-22 | install-time sandbox + static analysis + lockfile / typosquat / npm-audit / CJS runtime tracer | (this) |
-| **0.2.0** target Q3 2026 | ESM trace coverage · pkg-manager-agnostic install · safenpm diff integrates trace-diff · linux sandbox hardening | the runtime tracer no longer caveats "CJS only"; `safenpm install` works for projects using `yarn` / `pnpm` lockfiles |
-| **0.3.0** target Q1 2027 | optional runtime *enforcement* (deny-list policies, ESM loader) · per-dep policy in `.safenpmrc` · audit log review UI | a malicious dep that gets past install sandbox + static analysis can be denied `child_process` at `require()` time via a documented policy |
-| **0.4.x – 0.9.x** | hardening, external audit, real adoption work, real-attack-fixture tests | the SECURITY.md "Misses (important)" list has shrunk |
-| **1.0.0** | when the audit completes + N real third-party users + M months without a critical bug in the last release | see ["graduation criteria" below](#10-graduation-criteria) |
+This is an **AI-paired solo project**, so the roadmap separates two
+kinds of work that human-team roadmaps usually conflate:
+
+- **Effort-bound items** — measured in hours / days of focused session
+  work. Velocity is high; calendar dates would be misleading.
+- **Calendar-bound items** — *cannot* be accelerated by working
+  faster. External audit, real-world adoption, "no critical bug in
+  N months" are organic time.
+
+| | What | Effort-bound estimate | Calendar dependency |
+|---|---|---|---|
+| **0.1.0** ✓ shipped 2026-05-22 | install-time sandbox + static analysis + lockfile / typosquat / npm-audit / CJS runtime tracer | done | — |
+| **0.2.0** | ESM trace coverage · pkg-manager-agnostic install · `safenpm diff` integrates `trace --diff` · Linux profile hardening · real-attack fixture library | **~½ day** of session work | none — could ship next session |
+| **0.3.0** | optional runtime *enforcement* (Proxy-wrapped exports + ESM loader) · policy generation from traces · `.node` native-addon gate · structured `.safenpmrc` extension | **~1 day** of session work | none for the code; **adoption signal needed** to know whether the default deny-list is right |
+| **0.4 – 0.9** | hardening + audit + adoption + native-addon static scan + bundler integration + RC | code work is **~3–5 days** total | **gated by:** external audit (weeks) + real third-party users (organic) + 6-month no-critical-bug window |
+| **1.0.0** | when the audit completes + ≥10 external users have used a 0.9.x release + 6 months in 0.9.x without a critical bug | trivial bump | calendar-only — every gate is external time |
+
+**Implication:** 0.2 and 0.3 can land this week if there's a reason
+to. They're separated into versions because *shipping all the code at
+once doesn't validate anything* — users find bugs in 0.2 that should
+inform what 0.3 looks like. Without users, the version cadence is
+ceremony. The schedule below is the *order* of work, not the *clock*.
 
 **Versioning policy:** any 0.x → 0.(x+1) release can break the CLI
 surface, the JSON output, or the `.safenpmrc` format. The CLI golden
@@ -68,8 +83,9 @@ What's deliberately *not* in 0.1.0 (and why):
 
 ## 0.2.0 — ESM coverage and package-manager parity
 
-**Target:** end of Q3 2026. Backwards-compatible additions only on
-the CLI surface; no breaking changes to existing flags or
+**Effort estimate:** ~½ day of session work. Ships next time we
+sit down with this as the priority. Backwards-compatible additions
+only on the CLI surface; no breaking changes to existing flags or
 `.safenpmrc`.
 
 ### Ships
@@ -115,23 +131,30 @@ the CLI surface; no breaking changes to existing flags or
 - `event-stream@3.3.6` blocks under `safenpm install` and the
   fixture passes in CI on macOS + Linux.
 
-### Rough effort estimate
+### Effort estimate
 
-- ESM loader: ~2 weeks (mostly figuring out the right loader API
-  surface for Node 22+ and what gets stripped when bundlers
-  pre-process imports).
-- Yarn / pnpm: ~1 week.
-- Real-attack fixtures: ~1 week (downloading + sanitising; we don't
-  want to commit live malware to the repo, so the fixtures store
-  hashes + URLs and CI fetches at runtime in a sandbox).
-- Linux profile hardening: ongoing; one or two iteration cycles
-  driven by real `firejail` bug reports.
+- ESM loader: ~1–2h. The Node 22 loader API surface is small; the
+  real cost is figuring out what bundlers strip from imports before
+  the loader sees them.
+- Yarn / pnpm: ~30 min. Just lockfile detection + a spawn variant.
+- Real-attack fixtures: ~1–2h. We don't want to commit live malware
+  to the repo, so the fixtures store hashes + URLs and CI fetches
+  at runtime in an isolated dir.
+- Linux profile hardening: ~1h for the test pin + invariant doc.
+  Real-world iteration is calendar-bound on getting firejail bug
+  reports from actual users.
+
+**Total: ~½ day of focused session work.**
 
 ---
 
 ## 0.3.0 — Optional runtime enforcement
 
-**Target:** Q1 2027. Adds a new opt-in mode; default behavior
+**Effort estimate:** ~1 day of session work. The reason it's a
+separate version rather than a continuation of 0.2 is **not** code
+effort — it's that we need 0.2 to have been exercised by real users
+before designing the default deny-list, otherwise we're writing
+policy for a hypothetical. Adds a new opt-in mode; default behavior
 unchanged.
 
 ### Ships
@@ -176,18 +199,23 @@ unchanged.
 - A documented escape (yes, there will be at least one) is filed as
   an open issue with an honest scope note.
 
-### Rough effort estimate
+### Effort estimate
 
-- Loader + require monkeypatch with Proxy gating: ~4 weeks.
-- Policy file format + parser + .safenpmrc extension: ~1 week.
-- Per-package fixture suite: ~2 weeks.
-- Honest "here's a known bypass" doc: ongoing.
+- Loader + require monkeypatch with Proxy gating: ~4–6h.
+- Policy file format + parser + `.safenpmrc` extension: ~1h.
+- Per-package fixture suite: ~2h.
+- Honest "here's a known bypass" doc: ~30 min per bypass we
+  discover.
 
-**Risk:** this is the version most likely to ship later than
-planned. The compatibility surface (every weird thing the npm
-ecosystem does at runtime) is huge. If we hit that wall, the
-honest answer is to ship trace-only enhancements as 0.3 and defer
-enforcement to 0.4.
+**Total: ~1 day of focused session work.**
+
+**Real risk:** compatibility surface. Every weird thing the npm
+ecosystem does at runtime (dynamic `require`, native bindings,
+`process.binding`, monkeypatching globals) is a potential bypass
+or a potential false-positive. Code effort is small; the **iteration
+loop** with real consumers is what's calendar-bound. If 0.2 doesn't
+produce real users, 0.3 is just a code dump nobody is finding bugs
+in — better to wait.
 
 ---
 
@@ -197,51 +225,63 @@ The 0.x range is for "the API isn't stable yet but the project is
 useful." Versions in here are loosely scheduled — they fire as
 specific items complete.
 
-| Version | Theme | Concrete deliverable |
-|---|---|---|
-| 0.4 | **External audit.** | Engage one of: Trail of Bits, Cure53, an indie reviewer with a public track record. Publish the report and the diff of fixes. Without this, 1.0 doesn't happen. |
-| 0.5 | **Performance.** | Measure cold-install overhead vs. plain `npm install` on a 500-dep project. Optimise the static analyser and the parallel-fetch in `npm audit` until safenpm adds ≤ 15% overhead. |
-| 0.6 | **Threat-intel network.** | First real-world test — partner with one mid-size open-source project that runs `safenpm install` in their CI. Surface the first 100 distinct signals. Decide whether the `distinctReporters ≥ 5` threshold is right by looking at false-positive rate. |
-| 0.7 | **`.node` native-addon scanning.** | Static check on every `.node` file: signature comparison against npm registry, symbol-table inspection for known-dangerous imports (`fork`, `execvp`, `dlsym`). |
-| 0.8 | **Bundler integration.** | Webpack / Vite / esbuild plugin that catches malicious code introduced at *build* time (the 0.1.0 SECURITY.md miss). |
-| 0.9 | **Release candidate.** | Branch a `1.0.0-rc.1`, sit on it for 6+ weeks, fix only critical issues. If anything ships as 1.0.0, this is what becomes it. |
+Each row separates **effort** (sessions we can sit down and do)
+from **calendar bound** (things we have to wait on):
 
-Order is suggestive, not strict. If 0.6 surfaces a critical Sybil
-exploit, that becomes 0.6.1 and the rest slips. The point is the
-*direction*: each version closes one item from the "Misses
+| Version | Theme | Effort | Calendar bound |
+|---|---|---|---|
+| 0.4 | **External audit.** Engage one of: Trail of Bits, Cure53, an indie reviewer with a public track record. Publish the report + the diff of fixes. Without this, 1.0 doesn't happen. | ~½ day to write the audit-prep doc + threat-model brief | weeks (auditor scheduling) to months (audit duration); cannot be accelerated |
+| 0.5 | **Performance.** Cold-install overhead vs. plain `npm install` on a 500-dep project. Optimise until safenpm adds ≤ 15% overhead. | ~1h for the benchmark harness + ~few hours of optimisation | none |
+| 0.6 | **Threat-intel network — first real signals.** Partner with one mid-size open-source project running `safenpm install` in CI. Surface the first 100 distinct signals. Re-tune `distinctReporters ≥ 5` against the false-positive rate. | ~1h to instrument the dashboard | **organic** — needs a real partner to opt in; cannot be accelerated by writing more code |
+| 0.7 | **`.node` native-addon scanning.** Static signature comparison vs. npm registry, symbol-table inspection for `fork`/`execvp`/`dlsym`. | ~½ day | none |
+| 0.8 | **Bundler integration.** Webpack / Vite / esbuild plugin catching build-time malicious code (the 0.1 SECURITY.md miss). | ~1 day per bundler, ~3 days total | none |
+| 0.9 | **Release candidate.** Branch `1.0.0-rc.1`, sit on it for 6+ weeks fixing only critical issues. | ~30 min to cut the branch | **6+ weeks** by design — the whole point is elapsed time without a critical-bug filing |
+
+**Order is suggestive, not strict.** If 0.6 surfaces a critical
+Sybil exploit, that becomes 0.6.1 and the rest slips. The point is
+the *direction*: each version closes one item from the "Misses
 (important)" list in SECURITY.md.
+
+**Sum of effort across 0.4–0.9: roughly 3–5 days of session work.**
+The actual 0.4-to-1.0 timeline is dominated by audit duration +
+adoption growth + the 6-week RC window, not by writing code.
 
 ---
 
 ## 1.0 graduation criteria
 
 Specific conditions that all need to be true before `package.json`
-goes to `1.0.0`:
+goes to `1.0.0`. Every single one is **calendar-bound, not
+effort-bound** — that's the whole point of 1.0 vs 0.x:
 
-1. **External security audit completed.** A documented engagement
-   with a third-party reviewer, with all critical findings closed
-   and a public report.
-2. **≥ 10 distinct external users**, defined as: people who are
-   not the maintainer, who have opened an issue / PR / signal
-   from a non-localhost machineId. The threat-intel network's own
-   data is the source of truth.
-3. **≥ 6 months in 0.9.x without a critical bug filed.** A
-   critical bug is one that lets a known-malicious package script
-   reach the network or filesystem outside the sandbox. The bar
-   is intentionally high because the *whole point* of the tool is
-   that this never happens.
-4. **Documented public API.** What's stable: the CLI flags listed
-   in `--help`, the JSON output shape (`JsonOutput` in
+1. **External security audit completed.** Calendar: weeks (booking)
+   + weeks (audit) + revision cycles. A documented engagement with
+   a third-party reviewer, all critical findings closed, public
+   report.
+2. **≥ 10 distinct external users.** Calendar: organic adoption
+   time. Defined as: people who are not the maintainer, who have
+   opened an issue / PR / signal from a non-localhost machineId.
+   The threat-intel network's own data is the source of truth.
+3. **≥ 6 months in 0.9.x without a critical bug filed.** Calendar:
+   literally six months. A critical bug = one that lets a known-
+   malicious package script reach the network or filesystem outside
+   the sandbox. The bar is intentionally high because the *whole
+   point* of the tool is that this never happens.
+4. **Documented public API.** Effort: ~2h. What's stable: the CLI
+   flags listed in `--help`, the JSON output shape (`JsonOutput` in
    `src/types.ts`), the `.safenpmrc` syntax, the runtime-tracer
    trace file format. What stays internal: every TypeScript export
    under `src/` that isn't reachable from the CLI.
 5. **CI on at least three OS / package-manager combos** — macOS
-   + npm, Linux + npm, Linux + pnpm. Windows graduates from
-   experimental when this is feasible there too.
+   + npm, Linux + npm, Linux + pnpm. Effort: ~30 min. Windows
+   graduates from experimental when this is feasible there too.
 
-If any of these isn't met, the version stays in `0.x`. Calling it
-1.0 just because the calendar says so is exactly the overconfidence
-that made the original `1.0.0` publish in April 2026 a mistake.
+(4) and (5) are effort items inside the 1.0 envelope and can land
+the same day. (1), (2), (3) are wall-clock waits that no amount of
+session work can collapse. If any of these isn't met, the version
+stays in `0.x`. Calling it 1.0 just because the calendar says so is
+exactly the overconfidence that made the original `1.0.0` publish
+in April 2026 a mistake.
 
 ---
 
@@ -364,4 +404,7 @@ X" without a use case.
 
 ---
 
-Last updated: 2026-05-22 (post 0.1.0 ship).
+Last updated: 2026-05-22 (post 0.1.0 ship). All effort estimates
+assume AI-paired session work; multiply by ~50× for an unaccelerated
+human-team estimate if you're trying to map this onto a corporate
+calendar.
